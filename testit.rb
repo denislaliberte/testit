@@ -33,7 +33,7 @@ Arguments:
 USAGE
 
 manual = <<~MANUAL
-# Test it
+# [ Test it ](https://github.com/denislaliberte/testit)
 
 <%= description %>
 

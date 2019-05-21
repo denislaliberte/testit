@@ -1,4 +1,4 @@
-# Test it
+# [ Test it ](https://github.com/denislaliberte/testit)
 
 Test it is a tool to test api on multiple environnements.
 
@@ -66,7 +66,6 @@ payload:
 
 You can add a config file to your home directory, the value of this file will be used
 as default on all of your query
-
 ```
 ---
 # save this file to $HOME/.testit.yml
