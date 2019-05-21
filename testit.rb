@@ -20,7 +20,7 @@ Options:
   --man            complete manual
   --example        list key of available example
   --example [key]  optput example file
-  --on [env]       key of environement, see testit_on in example
+  --on [env]       key of the config files environement example $HOME/.testit.$env.yml
   --dry-run        dry run the commands
   -v, --verbose    verbose output
   --console        open a pry console with the result of the query
@@ -109,21 +109,6 @@ EXAMPLE
 
 
 example[:complex] = <<~EXAMPLE
-testit_on:
-  prod:
-    url:
-    key:
-    secret:
-    payload:
-      appID:
-      userID:
-  local:
-    url:
-    key:
-    secret:
-    payload:
-      appID:
-      userID:
 testit_with:
   query_file:
 
@@ -154,6 +139,17 @@ def console(path, yaml_data, request, response, yaml, uri)
   binding.pry
 end
 
+def default
+  if ARGV.include?('--on')
+    index = ARGV.index('--on') + 1
+    env = ARGV[index]
+    default_data = YAML.load_file("#{ENV['HOME']}/.testit.#{env}.yml")
+    # TODO validate that the file exist and list the possible files
+  else
+    default_data = YAML.load_file("#{ENV['HOME']}/.testit.yml")
+  end
+end
+
 if ARGV.include?('--help')
   puts description
   puts ""
@@ -174,7 +170,7 @@ else
     puts "dryrun"
     puts "File: #{path}" if verbose
     yaml_data = YAML.load_file(path)
-    default_data = YAML.load_file("#{ENV['HOME']}/.testit.yml")
+    default_data = default
     p yaml_data
     p default_data
     data = default_data.merge(yaml_data) {|_key, default, value| value.is_a?(Hash) ? default.merge(value) : value }
@@ -183,8 +179,7 @@ else
     puts "\nFile: #{path}" if verbose
 
     yaml_data = YAML.load_file(path)
-    default_data = YAML.load_file("#{ENV['HOME']}/.testit.yml")
-    data = default_data.merge(yaml_data) {|_key, default, value| value.is_a?(Hash) ? default.merge(value) : value }
+    data = default.merge(yaml_data) {|_key, default, value| value.is_a?(Hash) ? default.merge(value) : value }
 
     uri = URI.parse(data['url'])
     puts "\nuri: #{uri}" if verbose
