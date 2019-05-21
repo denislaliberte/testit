@@ -207,8 +207,8 @@ else
     end
 
     puts "\nResponse" if verbose
-    puts "code: #{response.code}" if  response.code.to_i > 299 || verbose
-    puts "body: #{response.body}" if verbose
+    puts "\ncode: #{response.code}" if  response.code.to_i > 299 || verbose
+    puts "\nbody: #{response.body}" if verbose
 
     json = JSON.load(response.body)
     yaml = YAML.dump(json)
