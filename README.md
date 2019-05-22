@@ -14,8 +14,9 @@ Options:
   --man            complete manual
   --example        list key of available example
   --example [key]  optput example file
-  --on [env]       key of environement, see testit_on in example
+  --on [env]       key of the config files environement
   --dry-run        dry run the commands
+  --args [args]    list of arguments as comma separated value
   -v, --verbose    verbose output
   --console        open a pry console with the result of the query
 
@@ -68,7 +69,8 @@ You can add a config file to your home directory, the value of this file will be
 as default on all of your query
 ```
 ---
-# save this file to $HOME/.testit.yml
+# save this file to $HOME/.testit.default.yml
+# for `--on prod` use $HOME/.testit.prod.yml
 url: "https://api.example.com/surprise"
 key: banana
 secret: coconuts

@@ -20,8 +20,9 @@ Options:
   --man            complete manual
   --example        list key of available example
   --example [key]  optput example file
-  --on [env]       key of the config files environement example $HOME/.testit.$env.yml
+  --on [env]       key of the config files environement
   --dry-run        dry run the commands
+  --args [args]    list of arguments as comma separated value
   -v, --verbose    verbose output
   --console        open a pry console with the result of the query
 
@@ -98,7 +99,8 @@ EXAMPLE
 
 example[:config] = <<~EXAMPLE
 ---
-# save this file to $HOME/.testit.yml
+# save this file to $HOME/.testit.default.yml
+# for `--on prod` use $HOME/.testit.prod.yml
 url: "https://api.example.com/surprise"
 key: banana
 secret: coconuts
@@ -113,10 +115,10 @@ testit_with:
   query_file:
 
 payload:
-  operationName:
-  query: <% files['query_file']%>
-  schemaHandle:
-  versionHandle:
+  operationName: <%= args(1, 'create') %>
+  query: <%= files('query_file') %>
+  schemaHandle: <%= kwargs(:schmea, 'merchant') %>
+  versionHandle: <%= kwargs(:schmea, 'unstable') %>
   variables:
     id: "gid://shopify/DiscountCodeNode/1",
     discount:
@@ -127,7 +129,10 @@ EXAMPLE
 
 verbose = !(ARGV & ['--verbose', '-v']).empty?
 dryrun = !(ARGV & ['--dry-run', '-d']).empty?
-path = ARGV.last
+
+def path
+  ARGV.last
+end
 
 def console(path, yaml_data, request, response, yaml, uri)
   _p = path
@@ -139,15 +144,30 @@ def console(path, yaml_data, request, response, yaml, uri)
   binding.pry
 end
 
+def args(index, default)
+  if ARGV.include?('--args')
+    position = ARGV.index('--args') + 1
+    ARGV[position].split(',')[index]
+  else
+    default
+  end
+end
+
 def default
   if ARGV.include?('--on')
     index = ARGV.index('--on') + 1
     env = ARGV[index]
-    default_data = YAML.load_file("#{ENV['HOME']}/.testit.#{env}.yml")
+    YAML.load_file("#{ENV['HOME']}/.testit.#{env}.yml")
     # TODO validate that the file exist and list the possible files
   else
-    default_data = YAML.load_file("#{ENV['HOME']}/.testit.yml")
+    YAML.load_file("#{ENV['HOME']}/.testit.default.yml")
   end
+end
+
+def yaml_data
+  yaml_template = File.read(path)
+  yaml = ERB.new(yaml_template).result(binding)
+  YAML.load(yaml)
 end
 
 if ARGV.include?('--help')
@@ -169,7 +189,6 @@ else
   if dryrun
     puts "dryrun"
     puts "File: #{path}" if verbose
-    yaml_data = YAML.load_file(path)
     default_data = default
     p yaml_data
     p default_data
@@ -178,7 +197,6 @@ else
   else
     puts "\nFile: #{path}" if verbose
 
-    yaml_data = YAML.load_file(path)
     data = default.merge(yaml_data) {|_key, default, value| value.is_a?(Hash) ? default.merge(value) : value }
 
     uri = URI.parse(data['url'])
