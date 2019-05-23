@@ -127,17 +127,84 @@ payload:
       endsAt: "2022-05-06T13:20:03Z",
 EXAMPLE
 
-verbose = !(ARGV & ['--verbose', '-v']).empty?
-dryrun = !(ARGV & ['--dry-run', '-d']).empty?
-
 class TestIt
-  def initialize(args)
-    @args = args
+  def initialize(arguments, home)
+    @arguments = arguments
+    @home = home
   end
 
   def path
-    @args.select {|arg| arg.match(/\.yml$/) }.last
+    @arguments.select {|arg| arg.match(/\.yml$/) }.last
   end
+
+  def args(index, default: nil)
+    # TODO: this is hard to use and can be way more flexible
+    # key: support key value in command line args key:value
+    # default: if not provided default to the key
+    # values: a list of the possible value, if none are provided there is no validation
+    # index: position of the argument in --args (optionnal), if none is provided use the count of the argument in the file
+    # type: enforce type
+    # ex.
+    # <%= args(:id, default: 1, type: Int, position: 0) %>
+    # <%= args(:operation, default: create, values: [:create, :update] ) %>
+    # <%= args(:discountWithCode)
+    #
+    # add --list-args command to parse the template and list all the argument and possible value
+    # --args = id,operation,discountWithCode
+    # id : type: Int, defaut: 1, position: 0
+    # operation :  default: create, values: [ create, update], position: 1
+    # discountWithCode : defautl: discountWithCode, position: 2
+    if include?('--args')
+      result = argument_value('--args').split(',')[index]
+      result.nil? ? default : result
+    else
+      default
+    end
+  end
+
+  def config
+    default = "#{@home}/.testit.default.yml"
+    if include?('--on')
+      path = "#{@home}/.testit.#{argument_value('--on')}.yml"
+      raise "The file #{path} don't exist" unless File.file?(path)
+      YAML.load_file(path)
+    elsif File.file?(default)
+      YAML.load_file(default)
+    else
+      {}
+    end
+  end
+
+  def yaml_data
+    yaml_template = File.read(path)
+    yaml = ERB.new(yaml_template).result(binding)
+    YAML.load(yaml)
+  end
+
+  def data
+    config.merge(yaml_data) {|_key, config_default, value| value.is_a?(Hash) ? config_default.merge(value) : value }
+  end
+
+  private
+
+  def include?(arg)
+    @arguments.include?(arg)
+  end
+
+  def argument_value(arg)
+    position = @arguments.index(arg) + 1
+    @arguments[position]
+  end
+end
+
+def default
+  # TODO remove once the template is compile from the TestIt 
+  TestIt.new(ARGV, ENV['HOME']).config
+end
+
+def args(index, default)
+  # TODO remove once the template is compile from the TestIt 
+  TestIt.new(ARGV, ENV['HOME']).args(index, default)
 end
 
 def console(path, yaml_data, request, response, yaml, uri)
@@ -150,63 +217,25 @@ def console(path, yaml_data, request, response, yaml, uri)
   binding.pry
 end
 
-def args(index, default)
-  if ARGV.include?('--args')
-    position = ARGV.index('--args') + 1
-    ARGV[position].split(',')[index]
-  else
-    default
-  end
-end
-
-def default
-  if ARGV.include?('--on')
-    index = ARGV.index('--on') + 1
-    env = ARGV[index]
-    YAML.load_file("#{ENV['HOME']}/.testit.#{env}.yml")
-    # TODO validate that the file exist and list the possible files
-  else
-    YAML.load_file("#{ENV['HOME']}/.testit.default.yml")
-  end
-end
-
 def yaml_data
-  path = TestIt.new(ARGV).path
-  yaml_template = File.read(path)
-  yaml = ERB.new(yaml_template).result(binding)
-  YAML.load(yaml)
+  TestIt.new(ARGV, ENV['HOME']).yaml_data
 end
 
-if ARGV.include?('--help')
-  puts description
-  puts ""
-  puts usage
-elsif ARGV.include?('--man')
-  puts ERB.new(manual).result(binding)
-elsif ARGV.include?('--example')
-  if ARGV[1].nil?
-    example.each { |key, _| puts "testit.rb example #{key}"  }
-  elsif example[ARGV[1].to_sym].nil?
-    puts "This is not a valid example, try one of:"
-    example.each { |key, _| puts "testit.rb example #{key}"  }
-  else
-    puts example[ARGV[1].to_sym]
-  end
-elsif ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
-  path = TestIt.new(ARGV).path
+verbose = !(ARGV & ['--verbose', '-v']).empty?
+dryrun = !(ARGV & ['--dry-run', '-d']).empty?
+
+if ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
+  test_it = TestIt.new(ARGV, ENV['HOME'])
+  path = test_it.path
+  puts "File: #{path}" if verbose
+  data = test_it.data
   if dryrun
     puts "dryrun"
-    puts "File: #{path}" if verbose
     default_data = default
     p yaml_data
     p default_data
-    data = default_data.merge(yaml_data) {|_key, default, value| value.is_a?(Hash) ? default.merge(value) : value }
     p data
   else
-    puts "\nFile: #{path}" if verbose
-
-    data = default.merge(yaml_data) {|_key, default, value| value.is_a?(Hash) ? default.merge(value) : value }
-
     uri = URI.parse(data['url'])
     puts "\nuri: #{uri}" if verbose
     request = Net::HTTP::Post.new(uri)
@@ -220,8 +249,10 @@ elsif ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
     request.body = JSON.dump(data['payload']) # TODO rename to body, validate presence
     puts "\nbody: #{request.body}" if verbose
 
-    data['headers'].each do |key, value|
-      request[key] = value
+    unless data['headers'].nil?
+      data['headers'].each do |key, value|
+        request[key] = value
+      end
     end
 
     req_options = { use_ssl: uri.scheme == "https" }
@@ -244,7 +275,21 @@ elsif ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
     puts "\nResult" if verbose
     puts yaml
   end
-else
-  puts description
 end
 
+if ARGV.include?('--help')
+  puts description
+  puts ""
+  puts usage
+elsif ARGV.include?('--man')
+  puts ERB.new(manual).result(binding)
+elsif ARGV.include?('--example')
+  if ARGV[1].nil?
+    example.each { |key, _| puts "testit.rb example #{key}"  }
+  elsif example[ARGV[1].to_sym].nil?
+    puts "This is not a valid example, try one of:"
+    example.each { |key, _| puts "testit.rb example #{key}"  }
+  else
+    puts example[ARGV[1].to_sym]
+  end
+end
