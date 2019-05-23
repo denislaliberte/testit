@@ -130,8 +130,14 @@ EXAMPLE
 verbose = !(ARGV & ['--verbose', '-v']).empty?
 dryrun = !(ARGV & ['--dry-run', '-d']).empty?
 
-def path
-  ARGV.last
+class TestIt
+  def initialize(args)
+    @args = args
+  end
+
+  def path
+    @args.select {|arg| arg.match(/\.yml$/) }.last
+  end
 end
 
 def console(path, yaml_data, request, response, yaml, uri)
@@ -165,6 +171,7 @@ def default
 end
 
 def yaml_data
+  path = TestIt.new(ARGV).path
   yaml_template = File.read(path)
   yaml = ERB.new(yaml_template).result(binding)
   YAML.load(yaml)
@@ -185,7 +192,8 @@ elsif ARGV.include?('--example')
   else
     puts example[ARGV[1].to_sym]
   end
-else
+elsif ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
+  path = TestIt.new(ARGV).path
   if dryrun
     puts "dryrun"
     puts "File: #{path}" if verbose
@@ -211,6 +219,11 @@ else
     request.content_type = "application/json"
     request.body = JSON.dump(data['payload']) # TODO rename to body, validate presence
     puts "\nbody: #{request.body}" if verbose
+
+    data['headers'].each do |key, value|
+      request[key] = value
+    end
+
     req_options = { use_ssl: uri.scheme == "https" }
 
     puts "\nyaml_data: #{YAML.dump(yaml_data)}" if verbose
@@ -231,5 +244,7 @@ else
     puts "\nResult" if verbose
     puts yaml
   end
+else
+  puts description
 end
 
