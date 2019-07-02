@@ -5,6 +5,8 @@ require 'net/http'
 require 'uri'
 require 'json'
 require 'YAML'
+require 'securerandom'
+
 puts "to use the --console install pry `$ gem install pry`" if ARGV.include?('--console')
 require 'pry' if ARGV.include?('--console')
 
@@ -205,6 +207,10 @@ end
 def args(index, default)
   # TODO remove once the template is compile from the TestIt 
   TestIt.new(ARGV, ENV['HOME']).args(index, default)
+end
+
+def uuid
+  SecureRandom.uuid
 end
 
 def console(path, yaml_data, request, response, yaml, uri)
