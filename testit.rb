@@ -236,10 +236,9 @@ if ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
   puts "File: #{path}" if verbose
   data = test_it.data
   if dryrun
-    puts "dryrun"
-    default_data = default
-    p yaml_data
-    p default_data
+    puts "# dryrun"
+    p yaml_data if verbose
+    p default if verbose
     p data
   else
     uri = URI.parse(data['url'])

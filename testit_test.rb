@@ -1,6 +1,8 @@
 require 'minitest/autorun'
 require_relative 'testit'
 require 'fileutils'
+require 'minitest/unit'
+require 'mocha/minitest'
 
 
 class TestItTest < Minitest::Test
@@ -63,6 +65,12 @@ class TestItTest < Minitest::Test
     File.write("tmp/test.yml", {key: 'overriden'}.to_yaml)
     assert_equal('overriden', instance(['--dry-run', '--on', 'prod',  'tmp/test.yml']).data[:key])
     assert_equal('not-overriden.com', instance(['--dry-run', '--on', 'prod',  'tmp/test.yml']).data[:url])
+  end
+
+  def test_dryrun
+    File.write("tmp/test.yml", {key: 'value'}.to_yaml)
+    STDOUT.expects(:puts).with("{key: 'value'}")
+    instance(['--dry-run']).execute
   end
 
   private
