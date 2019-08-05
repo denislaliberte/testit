@@ -280,6 +280,9 @@ if ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
     puts "\nResult" if verbose
     puts yaml
   end
+  if ARGV.include?('--script')
+    eval(data['script'])
+  end
 end
 
 if ARGV.include?('--help')
