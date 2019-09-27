@@ -140,22 +140,6 @@ class TestIt
   end
 
   def args(index, default: nil)
-    # TODO: this is hard to use and can be way more flexible
-    # key: support key value in command line args key:value
-    # default: if not provided default to the key
-    # values: a list of the possible value, if none are provided there is no validation
-    # index: position of the argument in --args (optionnal), if none is provided use the count of the argument in the file
-    # type: enforce type
-    # ex.
-    # <%= args(:id, default: 1, type: Int, position: 0) %>
-    # <%= args(:operation, default: create, values: [:create, :update] ) %>
-    # <%= args(:discountWithCode)
-    #
-    # add --list-args command to parse the template and list all the argument and possible value
-    # --args = id,operation,discountWithCode
-    # id : type: Int, defaut: 1, position: 0
-    # operation :  default: create, values: [ create, update], position: 1
-    # discountWithCode : defautl: discountWithCode, position: 2
     if include?('--args')
       result = argument_value('--args').split(',')[index]
       result.nil? ? default : result
