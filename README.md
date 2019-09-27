@@ -1,12 +1,12 @@
-# [ Test it ](https://github.com/denislaliberte/testit)
+# [ YARB! ](https://github.com/denislaliberte/yarb)
 
-Test it is a tool to test api on multiple environnements.
+Use Yaml And RuBy to create simple command line tools quickly
 
 ## usage
 
 ```
 Usage:
-  ~/testit.rb [options] variable
+  ~/ya.rb [options] variable
 
 Options:
 
@@ -29,12 +29,12 @@ Arguments:
 
 ## Installation
 
-testit is a stand alone script using only the ruby standard librairy, install it with wget
+YARB is a stand alone script using only the ruby standard librairy, install it with wget
 
 ```
-wget ~ https://raw.githubusercontent.com/denislaliberte/testit/master/testit.rb
-chmod -x ~/testit.rb
-~/testit.rb --help
+wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/ya.rb
+chmod -x ~/ya.rb
+~/ya.rb --help
 ```
 
 ## examples file
@@ -69,8 +69,8 @@ You can add a config file to your home directory, the value of this file will be
 as default on all of your query
 ```
 ---
-# save this file to $HOME/.testit.default.yml
-# for `--on prod` use $HOME/.testit.prod.yml
+# save this file to $HOME/.yarb.default.yml
+# for `--on prod` use $HOME/.yarb.prod.yml
 url: "https://api.example.com/surprise"
 key: banana
 secret: coconuts
