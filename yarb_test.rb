@@ -1,9 +1,10 @@
+require 'pry'
 require 'minitest/autorun'
 require_relative 'ya'
 require 'fileutils'
 
 
-class TestItTest < Minitest::Test
+class YarbTest < Minitest::Test
   def setup
     Dir.mkdir(home)
   end
@@ -68,7 +69,7 @@ class TestItTest < Minitest::Test
   private
 
   def instance(args)
-    TestIt.new(args, home)
+    Yarb.new(args, home)
   end
 
   def home

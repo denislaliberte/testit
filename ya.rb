@@ -4,7 +4,7 @@ require 'erb'
 require 'net/http'
 require 'uri'
 require 'json'
-require 'YAML'
+require 'yaml'
 require 'securerandom'
 
 puts "to use the --console install pry `$ gem install pry`" if ARGV.include?('--console')
@@ -129,7 +129,7 @@ payload:
       endsAt: "2022-05-06T13:20:03Z",
 EXAMPLE
 
-class TestIt
+class Yarb
   def initialize(arguments, home)
     @arguments = arguments
     @home = home
@@ -171,6 +171,13 @@ class TestIt
     config.merge(yaml_data) {|_key, config_default, value| value.is_a?(Hash) ? config_default.merge(value) : value }
   end
 
+  def execute
+    if include?('--dry-run')
+      binding.pry
+      puts YAML.dump(data).to_s
+    end
+  end
+
   private
 
   def include?(arg)
@@ -184,13 +191,13 @@ class TestIt
 end
 
 def default
-  # TODO remove once the template is compile from the TestIt 
-  TestIt.new(ARGV, ENV['HOME']).config
+  # TODO remove once the template is compile from the Yarb 
+  Yarb.new(ARGV, ENV['HOME']).config
 end
 
 def args(index, default)
-  # TODO remove once the template is compile from the TestIt 
-  TestIt.new(ARGV, ENV['HOME']).args(index, default)
+  # TODO remove once the template is compile from the Yarb 
+  Yarb.new(ARGV, ENV['HOME']).args(index, default)
 end
 
 def uuid
@@ -208,62 +215,24 @@ def console(path, yaml_data, request, response, yaml, uri)
 end
 
 def yaml_data
-  TestIt.new(ARGV, ENV['HOME']).yaml_data
+  Yarb.new(ARGV, ENV['HOME']).yaml_data
 end
 
 verbose = !(ARGV & ['--verbose', '-v']).empty?
 dryrun = !(ARGV & ['--dry-run', '-d']).empty?
 
 if ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
-  test_it = TestIt.new(ARGV, ENV['HOME'])
+  test_it = Yarb.new(ARGV, ENV['HOME'])
   path = test_it.path
   puts "File: #{path}" if verbose
   data = test_it.data
-  if dryrun
-    puts "dryrun"
-    default_data = default
-    p yaml_data
-    p default_data
+  if dryrun || data['script'].nil?
+    puts "# dryrun"
+    p yaml_data if verbose
+    p default if verbose
     p data
   else
-    uri = URI.parse(data['url'])
-    puts "\nuri: #{uri}" if verbose
-    request = Net::HTTP::Post.new(uri)
-
-    puts "\nAuthentification" if verbose
-    puts "key: #{data['key']}" if verbose
-    puts "secret: #{data['secret']}" if verbose
-    request.basic_auth(data['key'], data['secret']) # todo validate presence
-
-    request.content_type = "application/json"
-    request.body = JSON.dump(data['payload']) # TODO rename to body, validate presence
-    puts "\nbody: #{request.body}" if verbose
-
-    unless data['headers'].nil?
-      data['headers'].each do |key, value|
-        request[key] = value
-      end
-    end
-
-    req_options = { use_ssl: uri.scheme == "https" }
-
-    puts "\nyaml_data: #{YAML.dump(yaml_data)}" if verbose
-
-    response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
-      http.request(request)
-    end
-
-    puts "\nResponse" if verbose
-    puts "\ncode: #{response.code}" if  response.code.to_i > 299 || verbose
-    puts "\nbody: #{response.body}" if verbose
-
-    json = JSON.load(response.body)
-    yaml = YAML.dump(json)
-
-    console(path, data, request, response, yaml, uri) if  ARGV.include?('--console')
-
-    puts "\nResult" if verbose
-    puts yaml
+    eval(data['script'])
   end
 end
 
