@@ -1,5 +1,5 @@
 require 'minitest/autorun'
-require_relative 'testit'
+require_relative 'ya'
 require 'fileutils'
 
 
@@ -37,12 +37,12 @@ class TestItTest < Minitest::Test
   end
 
   def test_default_config_file
-    File.write("#{home}/.testit.default.yml", {key: 'asdf'}.to_yaml)
+    File.write("#{home}/.yarb.default.yml", {key: 'asdf'}.to_yaml)
     assert_equal({key: 'asdf'}, instance(['--dry-run']).config)
   end
 
   def test_on_env_config_file
-    File.write("#{home}/.testit.prod.yml", {key: 'prod'}.to_yaml)
+    File.write("#{home}/.yarb.prod.yml", {key: 'prod'}.to_yaml)
     assert_equal({key: 'prod'}, instance(['--dry-run', '--on', 'prod']).config)
   end
 
@@ -59,7 +59,7 @@ class TestItTest < Minitest::Test
   end
 
   def test_data
-    File.write("#{home}/.testit.prod.yml", {key: 'overriden-by-file', url: 'not-overriden.com'}.to_yaml)
+    File.write("#{home}/.yarb.prod.yml", {key: 'overriden-by-file', url: 'not-overriden.com'}.to_yaml)
     File.write("tmp/test.yml", {key: 'overriden'}.to_yaml)
     assert_equal('overriden', instance(['--dry-run', '--on', 'prod',  'tmp/test.yml']).data[:key])
     assert_equal('not-overriden.com', instance(['--dry-run', '--on', 'prod',  'tmp/test.yml']).data[:url])

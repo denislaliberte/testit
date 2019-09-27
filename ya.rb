@@ -10,11 +10,11 @@ require 'securerandom'
 puts "to use the --console install pry `$ gem install pry`" if ARGV.include?('--console')
 require 'pry' if ARGV.include?('--console')
 
-description = "Test it is a tool to test api on multiple environnements."
+description = "Use Yaml And RuBy to create simple command line tools quickly"
 
 usage = <<~USAGE.chomp
 Usage:
-  ~/testit.rb [options] variable
+  ~/ya.rb [options] variable
 
 Options:
 
@@ -36,7 +36,7 @@ Arguments:
 USAGE
 
 manual = <<~MANUAL
-# [ Test it ](https://github.com/denislaliberte/testit)
+# [ YARB! ](https://github.com/denislaliberte/yarb)
 
 <%= description %>
 
@@ -48,12 +48,12 @@ manual = <<~MANUAL
 
 ## Installation
 
-testit is a stand alone script using only the ruby standard librairy, install it with wget
+YARB is a stand alone script using only the ruby standard librairy, install it with wget
 
 ```
-wget ~ https://raw.githubusercontent.com/denislaliberte/testit/master/testit.rb
-chmod -x ~/testit.rb
-~/testit.rb --help
+wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/ya.rb
+chmod -x ~/ya.rb
+~/ya.rb --help
 ```
 
 ## examples file
@@ -101,8 +101,8 @@ EXAMPLE
 
 example[:config] = <<~EXAMPLE
 ---
-# save this file to $HOME/.testit.default.yml
-# for `--on prod` use $HOME/.testit.prod.yml
+# save this file to $HOME/.yarb.default.yml
+# for `--on prod` use $HOME/.yarb.prod.yml
 url: "https://api.example.com/surprise"
 key: banana
 secret: coconuts
@@ -165,9 +165,9 @@ class TestIt
   end
 
   def config
-    default = "#{@home}/.testit.default.yml"
+    default = "#{@home}/.yarb.default.yml"
     if include?('--on')
-      path = "#{@home}/.testit.#{argument_value('--on')}.yml"
+      path = "#{@home}/.yarb.#{argument_value('--on')}.yml"
       raise "The file #{path} don't exist" unless File.file?(path)
       YAML.load_file(path)
     elsif File.file?(default)
@@ -291,10 +291,10 @@ elsif ARGV.include?('--man')
   puts ERB.new(manual).result(binding)
 elsif ARGV.include?('--example')
   if ARGV[1].nil?
-    example.each { |key, _| puts "testit.rb example #{key}"  }
+    example.each { |key, _| puts "yarb.rb example #{key}"  }
   elsif example[ARGV[1].to_sym].nil?
     puts "This is not a valid example, try one of:"
-    example.each { |key, _| puts "testit.rb example #{key}"  }
+    example.each { |key, _| puts "yarb.rb example #{key}"  }
   else
     puts example[ARGV[1].to_sym]
   end
