@@ -170,7 +170,13 @@ class Yarb
   def execute
     if include?('--dry-run')
       puts YAML.dump(data).to_s
+    else
+      eval(data['eval'])
     end
+  end
+
+  def verbose
+    false
   end
 
   private
@@ -203,22 +209,9 @@ def yaml_data
   Yarb.new(ARGV, ENV['HOME']).yaml_data
 end
 
-verbose = !(ARGV & ['--verbose', '-v']).empty?
-dryrun = !(ARGV & ['--dry-run', '-d']).empty?
-
 if ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
   test_it = Yarb.new(ARGV, ENV['HOME'])
-  path = test_it.path
-  puts "File: #{path}" if verbose
-  data = test_it.data
-  if dryrun || data['script'].nil?
-    puts "# dryrun"
-    p yaml_data if verbose
-    p default if verbose
-    p data
-  else
-    eval(data['script'])
-  end
+  test_it.execute
 end
 
 if ARGV.include?('--help')

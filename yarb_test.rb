@@ -66,6 +66,20 @@ class YarbTest < Minitest::Test
     assert_equal('not-overriden.com', instance(['--dry-run', '--on', 'prod',  'tmp/test.yml']).data[:url])
   end
 
+  def test_eval
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
+    assert_throws :wrench do
+      instance(['tmp/test.yml']).execute
+    end
+  end
+
+  def test_dryrun
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
+    assert_output(/throw :wrench/) do
+      instance(['tmp/test.yml', '--dry-run']).execute
+    end
+  end
+
   private
 
   def instance(args)
