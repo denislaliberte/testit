@@ -18,7 +18,6 @@ Options:
   --dry-run        dry run the commands
   --args [args]    list of arguments as comma separated value
   -v, --verbose    verbose output
-  --console        open a pry console with the result of the query
 
 Arguments:
 

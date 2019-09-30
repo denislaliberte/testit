@@ -7,9 +7,6 @@ require 'json'
 require 'yaml'
 require 'securerandom'
 
-puts "to use the --console install pry `$ gem install pry`" if ARGV.include?('--console')
-require 'pry' if ARGV.include?('--console')
-
 description = "Use Yaml And RuBy to create simple command line tools quickly"
 
 usage = <<~USAGE.chomp
@@ -26,7 +23,6 @@ Options:
   --dry-run        dry run the commands
   --args [args]    list of arguments as comma separated value
   -v, --verbose    verbose output
-  --console        open a pry console with the result of the query
 
 Arguments:
 
@@ -173,7 +169,6 @@ class Yarb
 
   def execute
     if include?('--dry-run')
-      binding.pry
       puts YAML.dump(data).to_s
     end
   end
@@ -202,16 +197,6 @@ end
 
 def uuid
   SecureRandom.uuid
-end
-
-def console(path, yaml_data, request, response, yaml, uri)
-  _p = path
-  _yd = yaml_data
-  _rq = request
-  _r = response
-  _y = yaml
-  _u = uri
-  binding.pry
 end
 
 def yaml_data
