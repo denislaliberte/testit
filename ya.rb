@@ -7,30 +7,6 @@ require 'json'
 require 'yaml'
 require 'securerandom'
 
-description = "Use Yaml And RuBy to create simple command line tools quickly"
-
-usage = <<~USAGE.chomp
-Usage:
-  ~/ya.rb [options] variable
-
-Options:
-
-  --help           output this message
-  --man            complete manual
-  --example        list key of available example
-  --example [key]  optput example file
-  --on [env]       key of the config files environement
-  --dry-run        dry run the commands
-  --args [args]    list of arguments as comma separated value
-  -v, --verbose    verbose output
-
-Arguments:
-
-  variables
-    path to a yaml file containing the variables
-
-USAGE
-
 manual = <<~MANUAL
 # [ YARB! ](https://github.com/denislaliberte/yarb)
 
@@ -126,6 +102,33 @@ payload:
 EXAMPLE
 
 class Yarb
+  def description
+    "Use Yaml And RuBy to create simple command line tools quickly"
+  end
+
+  def usage
+    <<~USAGE.chomp
+      Usage:
+        ~/ya.rb [options] variable
+
+      Options:
+
+        --help           output this message
+        --man            complete manual
+        --example        list key of available example
+        --example [key]  optput example file
+        --on [env]       key of the config files environement
+        --dry-run        dry run the commands
+        --args [args]    list of arguments as comma separated value
+        -v, --verbose    verbose output
+
+      Arguments:
+
+        variables
+          path to a yaml file containing the variables
+    USAGE
+  end
+
   def initialize(arguments, home)
     @arguments = arguments
     @home = home
@@ -168,15 +171,28 @@ class Yarb
   end
 
   def execute
-    if include?('--dry-run')
-      puts YAML.dump(data).to_s
+    if !path.nil?
+      if include?('--dry-run')
+        puts YAML.dump(data).to_s
+      else
+        eval(data['eval'])
+      end
     else
-      eval(data['eval'])
+      puts help
     end
   end
 
   def verbose
     false
+  end
+
+  def help
+    template = <<~HELP.chomp
+      <%= description %>
+
+      <%= usage %>
+    HELP
+    ERB.new(template).result(binding)
   end
 
   private

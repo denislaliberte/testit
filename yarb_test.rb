@@ -80,6 +80,12 @@ class YarbTest < Minitest::Test
     end
   end
 
+  def test_execute_without_yml_return_the_help
+    assert_output(/Usage:/) do
+      instance([]).execute
+    end
+  end
+
   private
 
   def instance(args)
