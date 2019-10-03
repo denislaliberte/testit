@@ -75,16 +75,21 @@ class YarbTest < Minitest::Test
 
   def test_dryrun
     File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
-    assert_output(/throw :wrench/) do
-      instance(['tmp/test.yml', '--dry-run']).execute
-    end
+    assert_match(/throw :wrench/, instance(['tmp/test.yml', '--dry-run']).execute)
   end
 
   def test_execute_without_yml_return_the_help
-    assert_output(/Usage:/) do
-      instance([]).execute
-    end
+    assert_match(/Usage:/, instance([]).execute)
   end
+
+  def test_help_command
+    assert_match(/Usage:/, instance(['--help', 'tmp/test.yml']).execute)
+  end
+
+  def test_manual_command
+    assert_match(/Installation/, instance(['--man', 'tmp/test.yml']).execute)
+  end
+
 
   private
 

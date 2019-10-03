@@ -7,100 +7,6 @@ require 'json'
 require 'yaml'
 require 'securerandom'
 
-manual = <<~MANUAL
-# [ YARB! ](https://github.com/denislaliberte/yarb)
-
-<%= description %>
-
-## usage
-
-```
-<%= usage %>
-```
-
-## Installation
-
-YARB is a stand alone script using only the ruby standard librairy, install it with wget
-
-```
-wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/ya.rb
-chmod -x ~/ya.rb
-~/ya.rb --help
-```
-
-## examples file
-
-### simple example
-```
-<%= example[:simple] %>
-```
-
-### config example
-
-You can add a config file to your home directory, the value of this file will be used
-as default on all of your query
-```
-<%= example[:config] %>
-```
-
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
-MANUAL
-
-example = {}
-
-example[:simple] = <<~EXAMPLE
----
-url: "https://api.example.com/surprise"
-key: banana
-secret: coconuts
-payload:
-  appID: placeholder
-  userID: placeholder
-  variables:
-    first: 10
-  query: >-
-    query PriceRules($first: Int) {
-      priceRules(first: $first) {
-        edges{
-          node{
-            id
-          }
-        }
-      }
-    }
-EXAMPLE
-
-example[:config] = <<~EXAMPLE
----
-# save this file to $HOME/.yarb.default.yml
-# for `--on prod` use $HOME/.yarb.prod.yml
-url: "https://api.example.com/surprise"
-key: banana
-secret: coconuts
-payload:
-  appID: placeholder
-  userID: placeholder
-EXAMPLE
-
-
-example[:complex] = <<~EXAMPLE
-testit_with:
-  query_file:
-
-payload:
-  operationName: <%= args(1, 'create') %>
-  query: <%= files('query_file') %>
-  schemaHandle: <%= kwargs(:schmea, 'merchant') %>
-  versionHandle: <%= kwargs(:schmea, 'unstable') %>
-  variables:
-    id: "gid://shopify/DiscountCodeNode/1",
-    discount:
-      title: asdf
-      startsAt: "2021-05-06T13:20:03Z",
-      endsAt: "2022-05-06T13:20:03Z",
-EXAMPLE
-
 class Yarb
   def description
     "Use Yaml And RuBy to create simple command line tools quickly"
@@ -129,9 +35,123 @@ class Yarb
     USAGE
   end
 
+  def manual
+    template = <<~MANUAL.chomp
+      # [ YARB! ](https://github.com/denislaliberte/yarb)
+
+      <%= description %>
+
+      ## usage
+
+      ```
+      <%= usage %>
+      ```
+
+      ## Installation
+
+      YARB is a stand alone script using only the ruby standard librairy, install it with wget
+
+      ```
+      wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/ya.rb
+      chmod -x ~/ya.rb
+      ~/ya.rb --help
+      ```
+
+      ## examples file
+
+      ### simple example
+      ```
+      <%= example[:simple] %>
+      ```
+
+      ### config example
+
+      You can add a config file to your home directory, the value of this file will be used
+      as default on all of your query
+      ```
+      <%= example[:config] %>
+      ```
+
+      ## License
+      [MIT](https://choosealicense.com/licenses/mit/)
+    MANUAL
+
+    return ERB.new(template).result(binding)
+  end
+
+  def example
+    example = {}
+
+    example[:simple] = <<~EXAMPLE
+    ---
+    url: "https://api.example.com/surprise"
+    key: banana
+    secret: coconuts
+    payload:
+      appID: placeholder
+      userID: placeholder
+      variables:
+        first: 10
+      query: >-
+        query PriceRules($first: Int) {
+          priceRules(first: $first) {
+            edges{
+              node{
+                id
+              }
+            }
+          }
+        }
+    EXAMPLE
+
+    example[:config] = <<~EXAMPLE
+    ---
+    # save this file to $HOME/.yarb.default.yml
+    # for `--on prod` use $HOME/.yarb.prod.yml
+    url: "https://api.example.com/surprise"
+    key: banana
+    secret: coconuts
+    payload:
+      appID: placeholder
+      userID: placeholder
+    EXAMPLE
+
+    example[:complex] = <<~EXAMPLE
+    testit_with:
+      query_file:
+
+    payload:
+      operationName: <%= args(1, 'create') %>
+      query: <%= files('query_file') %>
+      schemaHandle: <%= kwargs(:schmea, 'merchant') %>
+      versionHandle: <%= kwargs(:schmea, 'unstable') %>
+      variables:
+        id: "gid://shopify/DiscountCodeNode/1",
+        discount:
+          title: asdf
+          startsAt: "2021-05-06T13:20:03Z",
+          endsAt: "2022-05-06T13:20:03Z",
+    EXAMPLE
+    return example
+  end
+
   def initialize(arguments, home)
     @arguments = arguments
     @home = home
+  end
+
+  def execute
+    if path.nil? || include?('--help')
+      help
+    elsif include?('--man')
+      manual
+    else
+      if include?('--dry-run')
+        YAML.dump(data).to_s
+      else
+        eval(data['eval'])
+      end
+    end
   end
 
   def path
@@ -170,18 +190,6 @@ class Yarb
     config.merge(yaml_data) {|_key, config_default, value| value.is_a?(Hash) ? config_default.merge(value) : value }
   end
 
-  def execute
-    if !path.nil?
-      if include?('--dry-run')
-        puts YAML.dump(data).to_s
-      else
-        eval(data['eval'])
-      end
-    else
-      puts help
-    end
-  end
-
   def verbose
     false
   end
@@ -207,42 +215,17 @@ class Yarb
   end
 end
 
-def default
-  # TODO remove once the template is compile from the Yarb 
-  Yarb.new(ARGV, ENV['HOME']).config
+if caller.length == 0
+  puts Yarb.new(ARGV, ENV['HOME']).execute
 end
 
-def args(index, default)
-  # TODO remove once the template is compile from the Yarb 
-  Yarb.new(ARGV, ENV['HOME']).args(index, default)
-end
-
-def uuid
-  SecureRandom.uuid
-end
-
-def yaml_data
-  Yarb.new(ARGV, ENV['HOME']).yaml_data
-end
-
-if ! ARGV.select {|arg| arg.match(/\.yml$/) }.empty?
-  test_it = Yarb.new(ARGV, ENV['HOME'])
-  test_it.execute
-end
-
-if ARGV.include?('--help')
-  puts description
-  puts ""
-  puts usage
-elsif ARGV.include?('--man')
-  puts ERB.new(manual).result(binding)
-elsif ARGV.include?('--example')
-  if ARGV[1].nil?
-    example.each { |key, _| puts "yarb.rb example #{key}"  }
-  elsif example[ARGV[1].to_sym].nil?
-    puts "This is not a valid example, try one of:"
-    example.each { |key, _| puts "yarb.rb example #{key}"  }
-  else
-    puts example[ARGV[1].to_sym]
-  end
-end
+#if ARGV.include?('--example')
+#  if ARGV[1].nil?
+#    example.each { |key, _| puts "yarb.rb example #{key}"  }
+#  elsif example[ARGV[1].to_sym].nil?
+#    puts "This is not a valid example, try one of:"
+#    example.each { |key, _| puts "yarb.rb example #{key}"  }
+#  else
+#    puts example[ARGV[1].to_sym]
+#  end
+#end
