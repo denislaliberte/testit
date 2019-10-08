@@ -141,12 +141,12 @@ class Yarb
   end
 
   def execute
-    if path.nil? || include?('--help')
+    if path.nil? || flag?(:help)
       help
-    elsif include?('--man')
+    elsif flag?(:man)
       manual
     else
-      if include?('--dry-run')
+      if flag?(:dry_run)
         YAML.dump(data).to_s
       elsif(data['eval'].kind_of?(Array))
         data['eval'].each do |key|
@@ -163,15 +163,22 @@ class Yarb
   end
 
   def args(key, default: nil)
-    string_key = "--#{key}"
-    return default unless include?(string_key)
-    value = argument_value(string_key)
+    return default unless include?(string_key(key))
+    value = argument_value(string_key(key))
 
     if value.nil?
       default
     else
       value
     end
+  end
+
+  def flag?(key)
+    include?(string_key(key))
+  end
+
+  def string_key(symbol)
+    "--#{symbol.to_s.gsub('_','-')}"
   end
 
   def config

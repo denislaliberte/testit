@@ -37,6 +37,14 @@ class YarbTest < Minitest::Test
     assert_equal 'default', instance(['--key', '--keys2', 'update']).args(:key, default: 'default')
   end
 
+  def test_flags_not_present
+    refute instance([]).flag?(:flag)
+  end
+
+  def test_flags_present
+    assert instance(['--flag']).flag?(:flag)
+  end
+
   def test_no_config_file
     assert_equal({}, instance(['--dry-run']).config)
   end
