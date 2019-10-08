@@ -25,7 +25,7 @@ class Yarb
         --example [key]  optput example file
         --on [env]       key of the config files environement
         --dry-run        dry run the commands
-        --args [args]    list of arguments as comma separated value
+        --key [args]     args to be used by the args(:key) method
         -v, --verbose    verbose output
 
       Arguments:
@@ -121,10 +121,10 @@ class Yarb
       query_file:
 
     payload:
-      operationName: <%= args(1, 'create') %>
+      operationName: <%= args(:action, 'create') %>
       query: <%= files('query_file') %>
-      schemaHandle: <%= kwargs(:schmea, 'merchant') %>
-      versionHandle: <%= kwargs(:schmea, 'unstable') %>
+      schemaHandle: <%= args(:schmea, 'merchant') %>
+      versionHandle: <%= args(:schmea, 'unstable') %>
       variables:
         id: "gid://shopify/DiscountCodeNode/1",
         discount:
@@ -158,12 +158,15 @@ class Yarb
     @arguments.select {|arg| arg.match(/\.yml$/) }.last
   end
 
-  def args(index, default: nil)
-    if include?('--args')
-      result = argument_value('--args').split(',')[index]
-      result.nil? ? default : result
-    else
+  def args(key, default: nil)
+    string_key = "--#{key}"
+    return default unless include?(string_key)
+    value = argument_value(string_key)
+
+    if value.nil?
       default
+    else
+      value
     end
   end
 
@@ -211,6 +214,7 @@ class Yarb
 
   def argument_value(arg)
     position = @arguments.index(arg) + 1
+    return nil if /^--/.match(@arguments[position])
     @arguments[position]
   end
 end

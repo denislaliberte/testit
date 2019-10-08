@@ -17,20 +17,24 @@ class YarbTest < Minitest::Test
     assert_equal 'variable.yml', instance(['--dry-run', 'variable.yml', '--console']).path
   end
 
-  def test_default_arguments
-    assert_equal 'default', instance(['--dry-run']).args(0, default: 'default')
+  def test_default_args
+    assert_equal 'default', instance(['--dry-run']).args(:key, default: 'default')
   end
 
-  def test_default_arguments_if_index_out_of_bound
-    assert_equal 'default', instance(['--args', 'create,update']).args(2, default: 'default')
-  end
-
-  def test_first_argument
-    assert_equal 'create', instance(['--args', 'create']).args(0, default: 'default')
+  def test_args
+    assert_equal 'create', instance(['--key', 'create']).args(:key, default: 'default')
   end
 
   def test_second_argument
-    assert_equal 'update', instance(['--args', 'create,update']).args(1, default: 'default')
+    assert_equal 'update', instance(['--key', 'create', '--key2', 'update']).args(:key2, default: 'default')
+  end
+
+  def test_argument_without_value_return_default
+    assert_equal 'default', instance(['--key']).args(:key, default: 'default')
+  end
+
+  def test_multiple_arguments_without_value_return_default
+    assert_equal 'default', instance(['--key', '--keys2', 'update']).args(:key, default: 'default')
   end
 
   def test_no_config_file
