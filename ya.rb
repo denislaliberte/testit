@@ -148,6 +148,10 @@ class Yarb
     else
       if include?('--dry-run')
         YAML.dump(data).to_s
+      elsif(data['eval'].kind_of?(Array))
+        data['eval'].each do |key|
+          eval(data[key]['eval'])
+        end
       else
         eval(data['eval'])
       end

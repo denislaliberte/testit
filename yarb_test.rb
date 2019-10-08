@@ -77,6 +77,13 @@ class YarbTest < Minitest::Test
     end
   end
 
+  def test_sub_eval
+    File.write('tmp/test.yml', {'eval' => ['test'], 'test' => { 'eval' => 'throw :wrench'}}.to_yaml)
+    assert_throws :wrench do
+      instance(['tmp/test.yml']).execute
+    end
+  end
+
   def test_dryrun
     File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
     assert_match(/throw :wrench/, instance(['tmp/test.yml', '--dry-run']).execute)
