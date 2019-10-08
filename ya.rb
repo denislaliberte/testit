@@ -141,12 +141,12 @@ class Yarb
   end
 
   def execute
-    if path.nil? || flag?(:help)
+    if path.nil? || flag?(:help, :h)
       help
     elsif flag?(:man)
       manual
     else
-      if flag?(:dry_run)
+      if flag?(:dry_run, :d)
         YAML.dump(data).to_s
       elsif(data['eval'].kind_of?(Array))
         data['eval'].each do |key|
@@ -162,9 +162,9 @@ class Yarb
     @arguments.select {|arg| arg.match(/\.yml$/) }.last
   end
 
-  def args(key, default: nil)
-    return default unless include?(string_key(key))
-    value = argument_value(string_key(key))
+  def args(key, short_key = nil, default: nil)
+    return default unless include?(key, short_key)
+    value = argument_value(key, short_key)
 
     if value.nil?
       default
@@ -173,18 +173,18 @@ class Yarb
     end
   end
 
-  def flag?(key)
-    include?(string_key(key))
+  def flag?(key, short_key=nil)
+    include?(key, short_key)
   end
 
-  def string_key(symbol)
-    "--#{symbol.to_s.gsub('_','-')}"
+  def string_key(symbol, prefix = '--')
+    "#{prefix}#{symbol.to_s.gsub('_','-')}"
   end
 
   def config
     default = "#{@home}/.yarb.default.yml"
-    if include?('--on')
-      path = "#{@home}/.yarb.#{argument_value('--on')}.yml"
+    if include?(:on, :o)
+      path = "#{@home}/.yarb.#{argument_value(:on, :o)}.yml"
       raise "The file #{path} don't exist" unless File.file?(path)
       YAML.load_file(path)
     elsif File.file?(default)
@@ -219,13 +219,15 @@ class Yarb
 
   private
 
-  def include?(arg)
-    @arguments.include?(arg)
+  def include?(key, short_key = nil)
+    @arguments.include?(string_key(key)) || (!short_key.nil? && @arguments.include?(string_key(short_key, '-')))
   end
 
-  def argument_value(arg)
-    position = @arguments.index(arg) + 1
-    return nil if /^--/.match(@arguments[position])
+  def argument_value(key, short_key)
+    index = include?(key) ? string_key(key) : string_key(short_key, '-')
+    return nil if @arguments.index(index).nil?
+    position = @arguments.index(index) + 1
+    return nil if /^-/.match(@arguments[position])
     @arguments[position]
   end
 end
