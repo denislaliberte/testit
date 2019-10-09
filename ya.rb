@@ -15,7 +15,7 @@ class Yarb
   def usage
     <<~USAGE.chomp
       Usage:
-        ~/ya.rb [options] variable
+        ~/ya.rb [arguments] [options]
 
       Options:
 
@@ -25,13 +25,18 @@ class Yarb
         --example [key]  optput example file
         --on [env]       key of the config files environement
         --dry-run        dry run the commands
-        --key [args]     args to be used by the args(:key) method
         -v, --verbose    verbose output
+        --key [opts]     options to be used by the `opts(:key)` method
 
       Arguments:
 
-        variables
-          path to a yaml file containing the variables
+        The first arguement is the path to a yrb file containing the variables
+
+        The yrb file can declare more arguments that would be available with `args(1)` method
+
+      Synopsis
+
+        ~/ya.rb variables.yrb test --dry-run --on prod
     USAGE
   end
 
@@ -106,8 +111,8 @@ class Yarb
 
     example[:config] = <<~EXAMPLE
     ---
-    # save this file to $HOME/.yarb.yml
-    # for `--on prod` use $HOME/.yarb.prod.yml
+    # save this file to $HOME/.yarb.yrb
+    # for `--on prod` use $HOME/.yarb.prod.yrb
     url: "https://api.example.com/surprise"
     key: banana
     secret: coconuts
@@ -121,10 +126,10 @@ class Yarb
       query_file:
 
     payload:
-      operationName: <%= args(:action, 'create') %>
+      operationName: <%= opts(:action, 'create') %>
       query: <%= files('query_file') %>
-      schemaHandle: <%= args(:schmea, 'merchant') %>
-      versionHandle: <%= args(:schmea, 'unstable') %>
+      schemaHandle: <%= opts(:schmea, 'merchant') %>
+      versionHandle: <%= opts(:schmea, 'unstable') %>
       variables:
         id: "gid://shopify/DiscountCodeNode/1",
         discount:
@@ -159,10 +164,17 @@ class Yarb
   end
 
   def path
-    @arguments.select {|arg| arg.match(/\.yml$/) }.last
+    return if args(0).nil? || !args(0).match(/\.yrb$/)
+    args(0)
   end
 
-  def args(key, short_key = nil, default: nil)
+  def args(index, default: nil)
+    arg = @arguments.reject { |arg| arg.match(/^-/)}.at(index)
+    return default if arg.nil?
+    arg
+  end
+
+  def opts(key, short_key = nil, default: nil)
     return default unless include?(key, short_key)
     value = argument_value(key, short_key)
 
@@ -182,9 +194,9 @@ class Yarb
   end
 
   def config
-    default = "#{@home}/.yarb.yml"
+    default = "#{@home}/.yarb.yrb"
     if include?(:on, :o)
-      path = "#{@home}/.yarb.#{argument_value(:on, :o)}.yml"
+      path = "#{@home}/.yarb.#{argument_value(:on, :o)}.yrb"
       raise "The file #{path} don't exist" unless File.file?(path)
       YAML.load_file(path)
     elsif File.file?(default)
