@@ -111,8 +111,8 @@ class Yarb
 
     example[:config] = <<~EXAMPLE
     ---
-    # save this file to $HOME/.yarb.yrb
-    # for `--on prod` use $HOME/.yarb.prod.yrb
+    # save this file to $HOME/.yarb.yml
+    # for `--on prod` use $HOME/.yarb.prod.yml
     url: "https://api.example.com/surprise"
     key: banana
     secret: coconuts
@@ -194,9 +194,9 @@ class Yarb
   end
 
   def config
-    default = "#{@home}/.yarb.yrb"
+    default = "#{@home}/.yarb.yml"
     if include?(:on, :o)
-      path = "#{@home}/.yarb.#{argument_value(:on, :o)}.yrb"
+      path = "#{@home}/.yarb.#{argument_value(:on, :o)}.yml"
       raise "The file #{path} don't exist" unless File.file?(path)
       YAML.load_file(path)
     elsif File.file?(default)

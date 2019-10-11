@@ -67,12 +67,12 @@ class YarbTest < Minitest::Test
   end
 
   def test_default_config_file
-    File.write("#{home}/.yarb.yrb", {key: 'asdf'}.to_yaml)
+    File.write("#{home}/.yarb.yml", {key: 'asdf'}.to_yaml)
     assert_equal({key: 'asdf'}, instance(['--dry-run']).config)
   end
 
   def test_on_env_config_file
-    File.write("#{home}/.yarb.prod.yrb", {key: 'prod'}.to_yaml)
+    File.write("#{home}/.yarb.prod.yml", {key: 'prod'}.to_yaml)
     assert_equal({key: 'prod'}, instance(['--dry-run', '--on', 'prod']).config)
   end
 
@@ -80,7 +80,7 @@ class YarbTest < Minitest::Test
     error = assert_raises do
       instance(['--on', 'nonexisting']).config
     end
-    assert_match(/nonexisting.yrb don't exist/, error.message)
+    assert_match(/nonexisting.yml don't exist/, error.message)
   end
 
   def test_yaml_data
@@ -89,7 +89,7 @@ class YarbTest < Minitest::Test
   end
 
   def test_data
-    File.write("#{home}/.yarb.prod.yrb", {key: 'overriden-by-file', url: 'not-overriden.com'}.to_yaml)
+    File.write("#{home}/.yarb.prod.yml", {key: 'overriden-by-file', url: 'not-overriden.com'}.to_yaml)
     File.write("tmp/test.yrb", {key: 'overriden'}.to_yaml)
     assert_equal('overriden', instance(['tmp/test.yrb', '--dry-run', '--on', 'prod']).data[:key])
     assert_equal('not-overriden.com', instance(['tmp/test.yrb', '--dry-run', '--on', 'prod']).data[:url])
