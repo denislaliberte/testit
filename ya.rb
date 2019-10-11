@@ -141,17 +141,21 @@ class Yarb
   end
 
   def initialize(arguments, home)
-    @arguments = arguments
+    @alias = {
+      '-h' => '--help',
+      '-d' => '--dry-run'
+    }
+    @arguments = arguments.map {|argument| @alias[argument].nil? ? argument : @alias[argument] }
     @home = home
   end
 
   def execute
-    if path.nil? || flag?(:help, :h)
+    if path.nil? || flag?(:help)
       help
     elsif flag?(:man)
       manual
     else
-      if flag?(:dry_run, :d)
+      if flag?(:dry_run)
         YAML.dump(data).to_s
       elsif(data['eval'].kind_of?(Array))
         data['eval'].each do |key|
@@ -169,14 +173,14 @@ class Yarb
   end
 
   def args(index, default: nil)
-    arg = @arguments.reject { |arg| arg.match(/^-/)}.at(index)
-    return default if arg.nil?
-    arg
+    argument = @arguments.reject { |arg| arg.match(/^-/)}.at(index)
+    return default if argument.nil?
+    argument
   end
 
-  def opts(key, short_key = nil, default: nil)
-    return default unless include?(key, short_key)
-    value = argument_value(key, short_key)
+  def opts(key, default: nil)
+    return default unless include?(key)
+    value = argument_value(key)
 
     if value.nil?
       default
@@ -185,18 +189,18 @@ class Yarb
     end
   end
 
-  def flag?(key, short_key=nil)
-    include?(key, short_key)
+  def flag?(key)
+    include?(key)
   end
 
-  def string_key(symbol, prefix = '--')
-    "#{prefix}#{symbol.to_s.gsub('_','-')}"
+  def string_key(symbol)
+    "--#{symbol.to_s.gsub('_','-')}"
   end
 
   def config
     default = "#{@home}/.yarb.yml"
-    if include?(:on, :o)
-      path = "#{@home}/.yarb.#{argument_value(:on, :o)}.yml"
+    if include?(:on)
+      path = "#{@home}/.yarb.#{argument_value(:on)}.yml"
       raise "The file #{path} don't exist" unless File.file?(path)
       YAML.load_file(path)
     elsif File.file?(default)
@@ -231,12 +235,12 @@ class Yarb
 
   private
 
-  def include?(key, short_key = nil)
-    @arguments.include?(string_key(key)) || (!short_key.nil? && @arguments.include?(string_key(short_key, '-')))
+  def include?(key)
+    @arguments.include?(string_key(key))
   end
 
-  def argument_value(key, short_key)
-    index = include?(key) ? string_key(key) : string_key(short_key, '-')
+  def argument_value(key)
+    index = string_key(key)
     return nil if @arguments.index(index).nil?
     position = @arguments.index(index) + 1
     return nil if /^-/.match(@arguments[position])
