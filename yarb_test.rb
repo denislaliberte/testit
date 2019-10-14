@@ -7,6 +7,8 @@ require 'fileutils'
 class YarbTest < Minitest::Test
   def setup
     Dir.mkdir(home)
+    Dir.mkdir("#{home}/.yarb")
+    Dir.mkdir("#{home}/.yarb/lib")
   end
 
   def teardown
@@ -100,6 +102,20 @@ class YarbTest < Minitest::Test
     end
   end
 
+  def test_lib
+    File.write("#{home}/.yarb/lib/test.rb", "throw :wrench")
+    assert_throws :wrench do
+      instance.execute
+    end
+  end
+
+  def test_missing_lib_is_silent
+    FileUtils.rm_rf("#{home}/.yarb")
+    assert_silent do
+      instance.execute
+    end
+  end
+
   def test_dryrun
     File.write('tmp/test.yrb', {'eval' => 'throw :wrench'}.to_yaml)
     assert_match(/throw :wrench/, instance(['tmp/test.yrb', '--dry-run']).execute)
@@ -117,10 +133,9 @@ class YarbTest < Minitest::Test
     assert_match(/Installation/, instance(['--man', 'tmp/test.yrb']).execute)
   end
 
-
   private
 
-  def instance(args)
+  def instance(args = [])
     Yarb.new(args, home)
   end
 

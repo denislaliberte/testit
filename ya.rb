@@ -150,6 +150,7 @@ class Yarb
   end
 
   def execute
+    load_files
     if path.nil? || flag?(:help)
       help
     elsif flag?(:man)
@@ -234,6 +235,10 @@ class Yarb
   end
 
   private
+
+  def load_files
+    Dir["#{@home}/.yarb/lib/*.rb"].each { |file| require file }
+  end
 
   def include?(key)
     @arguments.include?(string_key(key))
