@@ -33,11 +33,6 @@ class YarbTest < Minitest::Test
     assert_equal 'create', instance(['--key', 'create']).opts(:key, default: 'default')
   end
 
-  def test_opts_short_key
-    skip
-    assert_equal 'create', instance(['-k', 'create']).opts(:key, default: 'default')
-  end
-
   def test_second_argument
     assert_equal 'update', instance(['--key', 'create', '--key2', 'update']).opts(:key2, default: 'default')
   end
@@ -57,11 +52,6 @@ class YarbTest < Minitest::Test
   def test_flags_present
     assert instance(['--flag']).flag?(:flag)
   end
-
-  def test_flags_present
-    assert instance(['-f']).flag?(:flag, :f)
-  end
-
 
   def test_no_config_file
     assert_equal({}, instance(['--dry-run']).config)
