@@ -15,7 +15,7 @@ class Yarb
   def usage
     <<~USAGE.chomp
       Usage:
-        ~/ya.rb [arguments] [options]
+        ~/yarb.rb [arguments] [options]
 
       Options:
 
@@ -36,7 +36,7 @@ class Yarb
 
       Synopsis
 
-        ~/ya.rb variables.yrb test --dry-run --on prod
+        ~/yarb.rb variables.yrb test --dry-run --on prod
     USAGE
   end
 
@@ -57,9 +57,9 @@ class Yarb
       YARB is a stand alone script using only the ruby standard librairy, install it with wget
 
       ```
-      wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/ya.rb
-      chmod -x ~/ya.rb
-      ~/ya.rb --help
+      wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/yarb.rb
+      chmod -x ~/yarb.rb
+      ~/yarb.rb --help
       ```
 
       ## examples file
@@ -111,8 +111,8 @@ class Yarb
 
     example[:config] = <<~EXAMPLE
     ---
-    # save this file to $HOME/.yarb.yml
-    # for `--on prod` use $HOME/.yarb.prod.yml
+    # save this file to $HOME/.yrb/config.yml
+    # for `--on prod` use $HOME/.yrb/prod.yml
     url: "https://api.example.com/surprise"
     key: banana
     secret: coconuts
@@ -199,9 +199,9 @@ class Yarb
   end
 
   def config
-    default = "#{@home}/.yarb.yml"
+    default = "#{@home}/.yrb/config.yml"
     if include?(:on)
-      path = "#{@home}/.yarb.#{argument_value(:on)}.yml"
+      path = "#{@home}/.yrb/#{argument_value(:on)}.yml"
       raise "The file #{path} don't exist" unless File.file?(path)
       YAML.load_file(path)
     elsif File.file?(default)
@@ -237,7 +237,7 @@ class Yarb
   private
 
   def load_files
-    Dir["#{@home}/.yarb/lib/*.rb"].each { |file| require file }
+    Dir["#{@home}/.yrb/lib/*.rb"].each { |file| require file }
   end
 
   def include?(key)

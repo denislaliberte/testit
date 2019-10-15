@@ -7,8 +7,8 @@ require 'fileutils'
 class YarbTest < Minitest::Test
   def setup
     Dir.mkdir(home)
-    Dir.mkdir("#{home}/.yarb")
-    Dir.mkdir("#{home}/.yarb/lib")
+    Dir.mkdir("#{home}/.yrb")
+    Dir.mkdir("#{home}/.yrb/lib")
   end
 
   def teardown
@@ -60,12 +60,12 @@ class YarbTest < Minitest::Test
   end
 
   def test_default_config_file
-    File.write("#{home}/.yarb.yml", {key: 'asdf'}.to_yaml)
+    File.write("#{home}/.yrb/config.yml", {key: 'asdf'}.to_yaml)
     assert_equal({key: 'asdf'}, instance(['--dry-run']).config)
   end
 
   def test_on_env_config_file
-    File.write("#{home}/.yarb.prod.yml", {key: 'prod'}.to_yaml)
+    File.write("#{home}/.yrb/prod.yml", {key: 'prod'}.to_yaml)
     assert_equal({key: 'prod'}, instance(['--dry-run', '--on', 'prod']).config)
   end
 
@@ -82,7 +82,7 @@ class YarbTest < Minitest::Test
   end
 
   def test_data
-    File.write("#{home}/.yarb.prod.yml", {key: 'overriden-by-file', url: 'not-overriden.com'}.to_yaml)
+    File.write("#{home}/.yrb/prod.yml", {key: 'overriden-by-file', url: 'not-overriden.com'}.to_yaml)
     File.write("tmp/test.yrb", {key: 'overriden'}.to_yaml)
     assert_equal('overriden', instance(['tmp/test.yrb', '--dry-run', '--on', 'prod']).data[:key])
     assert_equal('not-overriden.com', instance(['tmp/test.yrb', '--dry-run', '--on', 'prod']).data[:url])
@@ -103,14 +103,14 @@ class YarbTest < Minitest::Test
   end
 
   def test_lib
-    File.write("#{home}/.yarb/lib/test.rb", "throw :wrench")
+    File.write("#{home}/.yrb/lib/test.rb", "throw :wrench")
     assert_throws :wrench do
       instance.execute
     end
   end
 
   def test_missing_lib_is_silent
-    FileUtils.rm_rf("#{home}/.yarb")
+    FileUtils.rm_rf("#{home}/.yrb")
     assert_silent do
       instance.execute
     end
