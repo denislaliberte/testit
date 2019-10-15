@@ -84,6 +84,14 @@ class Yarb
     return ERB.new(template).result(binding)
   end
 
+  DEFAULT_CONFIG = {
+    'alias' => {
+      '-h' => '--help',
+      '-d' => '--dry-run'
+    }
+  }
+
+
   def example
     example = {}
 
@@ -141,12 +149,9 @@ class Yarb
   end
 
   def initialize(arguments, home)
-    @alias = {
-      '-h' => '--help',
-      '-d' => '--dry-run'
-    }
-    @arguments = arguments.map {|argument| @alias[argument].nil? ? argument : @alias[argument] }
     @home = home
+    @arguments = arguments
+    override_alias
   end
 
   def execute
@@ -199,15 +204,15 @@ class Yarb
   end
 
   def config
-    default = "#{@home}/.yrb/config.yml"
+    default_path = "#{@home}/.yrb/config.yml"
     if include?(:on)
       path = "#{@home}/.yrb/#{argument_value(:on)}.yml"
       raise "The file #{path} don't exist" unless File.file?(path)
-      YAML.load_file(path)
-    elsif File.file?(default)
-      YAML.load_file(default)
+      override(DEFAULT_CONFIG, YAML.load_file(path))
+    elsif File.file?(default_path)
+      override(DEFAULT_CONFIG, YAML.load_file(default_path))
     else
-      {}
+      DEFAULT_CONFIG
     end
   end
 
@@ -218,7 +223,13 @@ class Yarb
   end
 
   def data
-    config.merge(yaml_data) {|_key, config_default, value| value.is_a?(Hash) ? config_default.merge(value) : value }
+    override(config, yaml_data)
+  end
+
+  def override(original, override)
+    original.merge(override) do |_key, original_value, value|
+      value.is_a?(Hash) ? original_value.merge(value) : value
+    end
   end
 
   def verbose
@@ -235,6 +246,11 @@ class Yarb
   end
 
   private
+
+  def override_alias
+    @arguments = @arguments.map {|argument| config['alias'][argument].nil? ? argument : config['alias'][argument] }
+  end
+
 
   def load_files
     Dir["#{@home}/.yrb/lib/*.rb"].each { |file| require file }

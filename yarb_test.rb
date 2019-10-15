@@ -35,6 +35,11 @@ class YarbTest < Minitest::Test
     assert_equal 'create', instance(['--key', 'create']).opts(:key, default: 'default')
   end
 
+  def test_opts_alias
+    File.write("#{home}/.yrb/config.yml", {'alias' => {'-k' => '--key'}}.to_yaml)
+    assert_equal 'create', instance(['-k', 'create']).opts(:key, default: 'default')
+  end
+
   def test_second_argument
     assert_equal 'update', instance(['--key', 'create', '--key2', 'update']).opts(:key2, default: 'default')
   end
@@ -56,17 +61,20 @@ class YarbTest < Minitest::Test
   end
 
   def test_no_config_file
-    assert_equal({}, instance(['--dry-run']).config)
+    assert_equal(Yarb::DEFAULT_CONFIG, instance(['--dry-run']).config)
   end
 
   def test_default_config_file
     File.write("#{home}/.yrb/config.yml", {key: 'asdf'}.to_yaml)
-    assert_equal({key: 'asdf'}, instance(['--dry-run']).config)
+    assert_equal('asdf', instance(['--dry-run']).config[:key])
+    assert_equal(Yarb::DEFAULT_CONFIG['alias'], instance(['--dry-run']).config['alias'])
   end
 
   def test_on_env_config_file
     File.write("#{home}/.yrb/prod.yml", {key: 'prod'}.to_yaml)
-    assert_equal({key: 'prod'}, instance(['--dry-run', '--on', 'prod']).config)
+    expected_config = Yarb::DEFAULT_CONFIG
+    expected_config[:key] = 'prod'
+    assert_equal(expected_config, instance(['--dry-run', '--on', 'prod']).config)
   end
 
   def test_on_env_raise_error_for_unexisting_file
