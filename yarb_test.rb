@@ -1,6 +1,6 @@
 require 'pry'
 require 'minitest/autorun'
-require_relative 'ya'
+require_relative 'yarb'
 require 'fileutils'
 
 
