@@ -154,9 +154,15 @@ class Yarb
     override_alias
   end
 
+  def self.command(command, &block)
+    @@command[command.to_s] = block
+  end
+
   def execute
     load_files
-    if path.nil? || flag?(:help)
+    if command?(args(0))
+      execute_command(args(0))
+    elsif path.nil? || flag?(:help)
       help
     elsif flag?(:man)
       manual
@@ -246,6 +252,17 @@ class Yarb
   end
 
   private
+
+  @@command = {}
+
+  def command?(command)
+    !@@command[command].nil?
+  end
+
+  def execute_command(command)
+    return unless command?(command)
+    @@command[command].call(self)
+  end
 
   def override_alias
     @arguments = @arguments.map {|argument| config['alias'][argument].nil? ? argument : config['alias'][argument] }

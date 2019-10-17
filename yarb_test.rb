@@ -141,6 +141,15 @@ class YarbTest < Minitest::Test
     assert_match(/Installation/, instance(['--man', 'tmp/test.yrb']).execute)
   end
 
+  def test_command_hook
+    Yarb.command(:key) do |_yarb|
+      throw :wrench
+    end
+    assert_throws :wrench do
+      instance(['key']).execute
+    end
+  end
+
   private
 
   def instance(args = [])
