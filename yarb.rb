@@ -15,18 +15,21 @@ class Yarb
   def usage
     <<~USAGE.chomp
       Usage:
-        ~/yarb.rb [arguments] [options]
+        ~/yarb.rb [command] [arguments] [options]
 
       Options:
 
-        --help           output this message
-        --man            complete manual
         --example        list key of available example
         --example [key]  optput example file
         --on [env]       key of the config files environement
         --dry-run        dry run the commands
         -v, --verbose    verbose output
         --key [opts]     options to be used by the `opts(:key)` method
+
+      Commands:
+
+        help             output this message
+        man              complete manual
 
       Arguments:
 
@@ -162,10 +165,8 @@ class Yarb
     load_files
     if command?(args(0))
       execute_command(args(0))
-    elsif path.nil? || flag?(:help)
+    elsif path.nil?
       help
-    elsif flag?(:man)
-      manual
     else
       if flag?(:dry_run)
         YAML.dump(data).to_s
@@ -255,6 +256,9 @@ class Yarb
 
   @@command = {}
 
+  command(:man) { |yarb| yarb.manual }
+  command(:help) { |yarb| yarb.help }
+
   def command?(command)
     !@@command[command].nil?
   end
@@ -267,7 +271,6 @@ class Yarb
   def override_alias
     @arguments = @arguments.map {|argument| config['alias'][argument].nil? ? argument : config['alias'][argument] }
   end
-
 
   def load_files
     Dir["#{@home}/.yrb/lib/*.rb"].each { |file| require file }

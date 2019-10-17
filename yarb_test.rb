@@ -134,11 +134,11 @@ class YarbTest < Minitest::Test
   end
 
   def test_help_command
-    assert_match(/Usage:/, instance([ 'tmp/test.yrb', '--help']).execute)
+    assert_match(/Usage:/, instance(['help']).execute)
   end
 
   def test_manual_command
-    assert_match(/Installation/, instance(['--man', 'tmp/test.yrb']).execute)
+    assert_match(/Installation/, instance(['man', 'tmp/test.yrb']).execute)
   end
 
   def test_command_hook
