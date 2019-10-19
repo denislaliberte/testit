@@ -154,6 +154,7 @@ class Yarb
   def initialize(arguments, home)
     @home = home
     @arguments = arguments
+    @config = load_configuration
     override_alias
   end
 
@@ -211,16 +212,7 @@ class Yarb
   end
 
   def config
-    default_path = "#{@home}/.yrb/config.yml"
-    if include?(:on)
-      path = "#{@home}/.yrb/#{argument_value(:on)}.yml"
-      raise "The file #{path} don't exist" unless File.file?(path)
-      override(DEFAULT_CONFIG, YAML.load_file(path))
-    elsif File.file?(default_path)
-      override(DEFAULT_CONFIG, YAML.load_file(default_path))
-    else
-      DEFAULT_CONFIG
-    end
+    @config
   end
 
   def yaml_data
@@ -230,7 +222,7 @@ class Yarb
   end
 
   def data
-    override(config, yaml_data)
+    override(@config, yaml_data)
   end
 
   def override(original, override)
@@ -252,7 +244,24 @@ class Yarb
     ERB.new(template).result(binding)
   end
 
+  def workspace
+    "#{@home}/.yrb"
+  end
+
   private
+
+  def load_configuration
+    default_path = "#{workspace}/config.yml"
+    if include?(:on)
+      path = "#{workspace}/#{argument_value(:on)}.yml"
+      raise "The file #{path} don't exist" unless File.file?(path)
+      override(DEFAULT_CONFIG, YAML.load_file(path))
+    elsif File.file?(default_path)
+      override(DEFAULT_CONFIG, YAML.load_file(default_path))
+    else
+      DEFAULT_CONFIG
+    end
+  end
 
   @@command = {}
 
@@ -269,11 +278,11 @@ class Yarb
   end
 
   def override_alias
-    @arguments = @arguments.map {|argument| config['alias'][argument].nil? ? argument : config['alias'][argument] }
+    @arguments = @arguments.map {|argument| @config['alias'][argument].nil? ? argument : @config['alias'][argument] }
   end
 
   def load_files
-    Dir["#{@home}/.yrb/lib/*.rb"].each { |file| require file }
+    Dir["#{workspace}/lib/*.rb"].each { |file| require file }
   end
 
   def include?(key)
