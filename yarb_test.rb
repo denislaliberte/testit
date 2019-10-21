@@ -70,41 +70,13 @@ class YarbTest < Minitest::Test
     assert_equal(Yarb::DEFAULT_CONFIG['alias'], instance(['--dry-run']).config['alias'])
   end
 
-  def test_on_env_config_file
-    File.write("#{home}/.yrb/prod.yml", {key: 'prod'}.to_yaml)
-    expected_config = Yarb::DEFAULT_CONFIG
-    expected_config[:key] = 'prod'
-    assert_equal(expected_config, instance(['--dry-run', '--on', 'prod']).config)
-  end
-
-  def test_on_env_raise_error_for_unexisting_file
-    error = assert_raises do
-      instance(['--on', 'nonexisting']).config
-    end
-    assert_match(/nonexisting.yml don't exist/, error.message)
-  end
-
   def test_yaml_data
     File.write("tmp/test.yrb", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
     assert_equal({key: 'asdf'}, instance(['--dry-run', 'tmp/test.yrb']).yaml_data)
   end
 
-  def test_data
-    File.write("#{home}/.yrb/prod.yml", {key: 'overriden-by-file', url: 'not-overriden.com'}.to_yaml)
-    File.write("tmp/test.yrb", {key: 'overriden'}.to_yaml)
-    assert_equal('overriden', instance(['tmp/test.yrb', '--dry-run', '--on', 'prod']).data[:key])
-    assert_equal('not-overriden.com', instance(['tmp/test.yrb', '--dry-run', '--on', 'prod']).data[:url])
-  end
-
   def test_eval
     File.write('tmp/test.yrb', {'eval' => 'throw :wrench'}.to_yaml)
-    assert_throws :wrench do
-      instance(['tmp/test.yrb']).execute
-    end
-  end
-
-  def test_sub_eval
-    File.write('tmp/test.yrb', {'eval' => ['test'], 'test' => { 'eval' => 'throw :wrench'}}.to_yaml)
     assert_throws :wrench do
       instance(['tmp/test.yrb']).execute
     end

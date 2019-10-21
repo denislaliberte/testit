@@ -1,11 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'erb'
-require 'net/http'
-require 'uri'
-require 'json'
 require 'yaml'
-require 'securerandom'
 
 class Yarb
   def description
@@ -16,15 +12,6 @@ class Yarb
     <<~USAGE.chomp
       Usage:
         ~/yarb.rb [command] [arguments] [options]
-
-      Options:
-
-        --example        list key of available example
-        --example [key]  optput example file
-        --on [env]       key of the config files environement
-        --dry-run        dry run the commands
-        -v, --verbose    verbose output
-        --key [opts]     options to be used by the `opts(:key)` method
 
       Commands:
 
@@ -37,9 +24,17 @@ class Yarb
 
         The yrb file can declare more arguments that would be available with `args(1)` method
 
+      Options:
+
+        --example        list key of available example
+        --example [key]  optput example file
+        --dry-run        dry run the commands
+        --verbose    verbose output
+        --key [opts]     options to be used by the `opts(:key)` method
+
       Synopsis
 
-        ~/yarb.rb variables.yrb test --dry-run --on prod
+        ~/yarb.rb variables.yrb test --dry-run
     USAGE
   end
 
@@ -153,8 +148,8 @@ class Yarb
 
   def initialize(arguments, home)
     @home = home
-    @arguments = arguments
     @config = load_configuration
+    @arguments = arguments
     override_alias
   end
 
@@ -171,10 +166,6 @@ class Yarb
     else
       if flag?(:dry_run)
         YAML.dump(data).to_s
-      elsif(data['eval'].kind_of?(Array))
-        data['eval'].each do |key|
-          eval(data[key]['eval'])
-        end
       else
         eval(data['eval'])
       end
@@ -232,7 +223,7 @@ class Yarb
   end
 
   def verbose
-    false
+    flag?(:verbose)
   end
 
   def help
@@ -252,11 +243,7 @@ class Yarb
 
   def load_configuration
     default_path = "#{workspace}/config.yml"
-    if include?(:on)
-      path = "#{workspace}/#{argument_value(:on)}.yml"
-      raise "The file #{path} don't exist" unless File.file?(path)
-      override(DEFAULT_CONFIG, YAML.load_file(path))
-    elsif File.file?(default_path)
+    if File.file?(default_path)
       override(DEFAULT_CONFIG, YAML.load_file(default_path))
     else
       DEFAULT_CONFIG
@@ -302,13 +289,3 @@ if caller.length == 0
   puts Yarb.new(ARGV, ENV['HOME']).execute
 end
 
-#if ARGV.include?('--example')
-#  if ARGV[1].nil?
-#    example.each { |key, _| puts "yarb.rb example #{key}"  }
-#  elsif example[ARGV[1].to_sym].nil?
-#    puts "This is not a valid example, try one of:"
-#    example.each { |key, _| puts "yarb.rb example #{key}"  }
-#  else
-#    puts example[ARGV[1].to_sym]
-#  end
-#end
