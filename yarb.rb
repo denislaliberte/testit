@@ -17,19 +17,23 @@ class Yarb
 
         help             output this message
         man              complete manual
+        eval             load the yml file and evaluate the ruby in the 'eval' key
 
       Arguments:
 
         The first arguement is the path to a yml file containing the variables
 
-        The yml file can declare more arguments that would be available with `args(1)` method
+        The yml file can contain erb and use
+          <%= args(n) %> to get the value of arguments at position n
+          <%= opts(:key) %> to get the value of `--key value`
+          <% if opts?(:key) %> that return true if `--key` is used
 
       Options:
 
         --example        list key of available example
         --example [key]  optput example file
         --dry-run        dry run the commands
-        --verbose    verbose output
+        --verbose        verbose output
         --key [opts]     options to be used by the `opts(:key)` method
 
       Synopsis
@@ -37,6 +41,14 @@ class Yarb
         ~/yarb.rb variables.yml test --dry-run
     USAGE
   end
+
+  def self.command(command, &block)
+    @@command[command.to_s] = block
+  end
+
+  @@command = {}
+
+  command(:man) { |yarb| yarb.manual }
 
   def manual
     template = <<~MANUAL.chomp
@@ -81,15 +93,6 @@ class Yarb
 
     return ERB.new(template).result(binding)
   end
-
-  DEFAULT_CONFIG = {
-    'default_command' => 'help',
-    'alias' => {
-      '-h' => '--help',
-      '-d' => '--dry-run'
-    }
-  }
-
 
   def example
     example = {}
@@ -155,12 +158,6 @@ class Yarb
     load_files
   end
 
-  @@command = {}
-
-  def self.command(command, &block)
-    @@command[command.to_s] = block
-  end
-
   def execute
     if flag?(:dry_run)
       YAML.dump(data).to_s
@@ -170,6 +167,10 @@ class Yarb
       @arguments.unshift(@config['default_command'])
       execute
     end
+  end
+
+  def flag?(key)
+    include?(key)
   end
 
   command(:eval) { |yarb| yarb.evaluate }
@@ -200,10 +201,6 @@ class Yarb
     end
   end
 
-  def flag?(key)
-    include?(key)
-  end
-
   def string_key(symbol)
     "--#{symbol.to_s.gsub('_','-')}"
   end
@@ -232,6 +229,8 @@ class Yarb
     flag?(:verbose)
   end
 
+  command(:help) { |yarb| yarb.help }
+
   def help
     template = <<~HELP.chomp
       <%= description %>
@@ -247,6 +246,14 @@ class Yarb
 
   private
 
+  DEFAULT_CONFIG = {
+    'default_command' => 'help',
+    'alias' => {
+      '-h' => '--help',
+      '-d' => '--dry-run'
+    }
+  }
+
   def load_configuration
     default_path = "#{workspace}/config.yml"
     if File.file?(default_path)
@@ -254,18 +261,6 @@ class Yarb
     else
       DEFAULT_CONFIG
     end
-  end
-
-  command(:man) { |yarb| yarb.manual }
-  command(:help) { |yarb| yarb.help }
-
-  def command?(command)
-    !@@command[command].nil?
-  end
-
-  def execute_command(command)
-    return unless command?(command)
-    @@command[command].call(self)
   end
 
   def override_alias
@@ -278,6 +273,15 @@ class Yarb
 
   def include?(key)
     @arguments.include?(string_key(key))
+  end
+
+  def command?(command)
+    !@@command[command].nil?
+  end
+
+  def execute_command(command)
+    return unless command?(command)
+    @@command[command].call(self)
   end
 
   def argument_value(key)
