@@ -153,28 +153,32 @@ class Yarb
     override_alias
   end
 
+  @@command = {}
+
   def self.command(command, &block)
     @@command[command.to_s] = block
   end
 
   def execute
     load_files
-    if command?(args(0))
+    if flag?(:dry_run)
+      YAML.dump(data).to_s
+    elsif command?(args(0))
       execute_command(args(0))
     elsif path.nil?
       help
-    else
-      if flag?(:dry_run)
-        YAML.dump(data).to_s
-      else
-        eval(data['eval'])
-      end
     end
   end
 
+  command(:eval) { |yarb| yarb.evaluate }
+
+  def evaluate
+    eval(data['eval'])
+  end
+
   def path
-    return if args(0).nil? || !args(0).match(/\.yml$/)
-    args(0)
+    return if args(1).nil? || !args(1).match(/\.yml$/)
+    args(1)
   end
 
   def args(index, default: nil)
@@ -249,8 +253,6 @@ class Yarb
       DEFAULT_CONFIG
     end
   end
-
-  @@command = {}
 
   command(:man) { |yarb| yarb.manual }
   command(:help) { |yarb| yarb.help }
