@@ -83,7 +83,7 @@ class Yarb
   end
 
   DEFAULT_CONFIG = {
-    'default_command' => 'eval',
+    'default_command' => 'help',
     'alias' => {
       '-h' => '--help',
       '-d' => '--dry-run'
@@ -166,11 +166,9 @@ class Yarb
       YAML.dump(data).to_s
     elsif command?(args(0))
       execute_command(args(0))
-    elsif args(0) && args(0).match(/\.yml$/)
+    else
       @arguments.unshift(@config['default_command'])
       execute
-    else
-      help
     end
   end
 
