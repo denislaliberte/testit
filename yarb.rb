@@ -48,6 +48,17 @@ class Yarb
 
   @@command = {}
 
+  command(:help) { |yarb| yarb.help }
+
+  def help
+    template = <<~HELP.chomp
+      <%= description %>
+
+      <%= usage %>
+    HELP
+    ERB.new(template).result(binding)
+  end
+
   command(:man) { |yarb| yarb.manual }
 
   def manual
@@ -227,17 +238,6 @@ class Yarb
 
   def verbose
     flag?(:verbose)
-  end
-
-  command(:help) { |yarb| yarb.help }
-
-  def help
-    template = <<~HELP.chomp
-      <%= description %>
-
-      <%= usage %>
-    HELP
-    ERB.new(template).result(binding)
   end
 
   def workspace
