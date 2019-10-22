@@ -20,9 +20,9 @@ class Yarb
 
       Arguments:
 
-        The first arguement is the path to a yrb file containing the variables
+        The first arguement is the path to a yml file containing the variables
 
-        The yrb file can declare more arguments that would be available with `args(1)` method
+        The yml file can declare more arguments that would be available with `args(1)` method
 
       Options:
 
@@ -34,7 +34,7 @@ class Yarb
 
       Synopsis
 
-        ~/yarb.rb variables.yrb test --dry-run
+        ~/yarb.rb variables.yml test --dry-run
     USAGE
   end
 
@@ -173,7 +173,7 @@ class Yarb
   end
 
   def path
-    return if args(0).nil? || !args(0).match(/\.yrb$/)
+    return if args(0).nil? || !args(0).match(/\.yml$/)
     args(0)
   end
 

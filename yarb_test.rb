@@ -16,7 +16,7 @@ class YarbTest < Minitest::Test
   end
 
   def test_path
-    assert_equal 'variable.yrb', instance(['variable.yrb', '--console']).path
+    assert_equal 'variable.yml', instance(['variable.yml', '--console']).path
   end
 
   def test_default_args
@@ -24,7 +24,7 @@ class YarbTest < Minitest::Test
   end
 
   def test_args
-    assert_equal 'test.yrb', instance(['test.yrb', '--dry-run']).args(0, default: 'default')
+    assert_equal 'test.yml', instance(['test.yml', '--dry-run']).args(0, default: 'default')
   end
 
   def test_default_opts
@@ -71,14 +71,14 @@ class YarbTest < Minitest::Test
   end
 
   def test_yaml_data
-    File.write("tmp/test.yrb", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
-    assert_equal({key: 'asdf'}, instance(['--dry-run', 'tmp/test.yrb']).yaml_data)
+    File.write("tmp/test.yml", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
+    assert_equal({key: 'asdf'}, instance(['--dry-run', 'tmp/test.yml']).yaml_data)
   end
 
   def test_eval
-    File.write('tmp/test.yrb', {'eval' => 'throw :wrench'}.to_yaml)
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
     assert_throws :wrench do
-      instance(['tmp/test.yrb']).execute
+      instance(['tmp/test.yml']).execute
     end
   end
 
@@ -97,8 +97,8 @@ class YarbTest < Minitest::Test
   end
 
   def test_dryrun
-    File.write('tmp/test.yrb', {'eval' => 'throw :wrench'}.to_yaml)
-    assert_match(/throw :wrench/, instance(['tmp/test.yrb', '--dry-run']).execute)
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
+    assert_match(/throw :wrench/, instance(['tmp/test.yml', '--dry-run']).execute)
   end
 
   def test_execute_without_yrb_return_the_help
@@ -110,7 +110,7 @@ class YarbTest < Minitest::Test
   end
 
   def test_manual_command
-    assert_match(/Installation/, instance(['man', 'tmp/test.yrb']).execute)
+    assert_match(/Installation/, instance(['man', 'tmp/test.yml']).execute)
   end
 
   def test_command_hook
