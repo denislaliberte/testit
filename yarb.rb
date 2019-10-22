@@ -151,6 +151,7 @@ class Yarb
     @config = load_configuration
     @arguments = arguments
     override_alias
+    load_files
   end
 
   @@command = {}
@@ -160,12 +161,14 @@ class Yarb
   end
 
   def execute
-    load_files
     if flag?(:dry_run)
       YAML.dump(data).to_s
     elsif command?(args(0))
       execute_command(args(0))
-    elsif path.nil?
+    elsif args(0) && args(0).match(/\.yml$/)
+      @arguments.unshift('eval')
+      execute
+    else
       help
     end
   end

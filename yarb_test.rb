@@ -82,6 +82,13 @@ class YarbTest < Minitest::Test
     end
   end
 
+  def test_default_command
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
+    assert_throws :wrench do
+      instance(['tmp/test.yml']).execute
+    end
+  end
+
   def test_lib
     File.write("#{home}/.yrb/lib/test.rb", "throw :wrench")
     assert_throws :wrench do
