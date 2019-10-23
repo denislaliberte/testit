@@ -177,11 +177,8 @@ class Yarb
   def execute
     if flag?(:dry_run)
       YAML.dump(@data).to_s
-    elsif command?(args(0))
-      execute_command(args(0))
     else
-      @arguments.unshift(@config['default_command'])
-      execute
+      execute_command(args(0))
     end
   end
 
