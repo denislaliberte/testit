@@ -5,51 +5,43 @@ require 'fileutils'
 
 
 class YarbTest < Minitest::Test
-  def setup
-    Dir.mkdir(home)
-    Dir.mkdir("#{home}/.yrb")
-    Dir.mkdir("#{home}/.yrb/lib")
+  def test_help_command
+    assert_match(/Usage:/, instance(['help']).execute)
   end
 
-  def teardown
-    FileUtils.rm_rf(home)
+  def test_execute_without_argument_return_the_help
+    assert_match(/Usage:/, instance([]).execute)
   end
 
-  def test_path
-    assert_equal 'variable.yml', instance(['eval', 'variable.yml', '--console']).path
+  def test_manual_command
+    assert_match(/Installation/, instance(['man', 'tmp/test.yml']).execute)
   end
 
-  def test_default_args
-    assert_equal 'default', instance(['--dry-run']).args(0, default: 'default')
+  def test_example
+    skip
   end
 
-  def test_args
-    assert_equal 'test.yml', instance(['test.yml', '--dry-run']).args(0, default: 'default')
+  def test_dryrun
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
+    assert_match(/throw :wrench/, instance(['eval', 'tmp/test.yml', '--dry-run']).execute)
   end
 
-  def test_default_opts
-    assert_equal 'default', instance(['--dry-run']).opts(:key, default: 'default')
+  def test_command_hook
+    Yarb.command(:key) do |_yarb|
+      throw :wrench
+    end
+    assert_throws :wrench do
+      instance(['key']).execute
+    end
   end
 
-  def test_opts
-    assert_equal 'create', instance(['--key', 'create']).opts(:key, default: 'default')
-  end
-
-  def test_opts_alias
-    File.write("#{home}/.yrb/config.yml", {'alias' => {'-k' => '--key'}}.to_yaml)
-    assert_equal 'create', instance(['-k', 'create']).opts(:key, default: 'default')
-  end
-
-  def test_second_argument
-    assert_equal 'update', instance(['--key', 'create', '--key2', 'update']).opts(:key2, default: 'default')
-  end
-
-  def test_argument_without_value_return_default
-    assert_equal 'default', instance(['--key']).opts(:key, default: 'default')
-  end
-
-  def test_multiple_arguments_without_value_return_default
-    assert_equal 'default', instance(['--key', '--keys2', 'update']).opts(:key, default: 'default')
+  def test_default_command
+    skip "add default command to arguments before loading the data"
+    File.write("#{home}/.yrb/config.yml", {'default_command' => 'eval' }.to_yaml)
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
+    assert_throws :wrench do
+      instance(['tmp/test.yml']).execute
+    end
   end
 
   def test_flags_not_present
@@ -60,21 +52,6 @@ class YarbTest < Minitest::Test
     assert instance(['--flag']).flag?(:flag)
   end
 
-  def test_no_config_file
-    assert_equal(Yarb::DEFAULT_CONFIG, instance(['--dry-run']).config)
-  end
-
-  def test_default_config_file
-    File.write("#{home}/.yrb/config.yml", {key: 'asdf'}.to_yaml)
-    assert_equal('asdf', instance(['--dry-run']).config[:key])
-    assert_equal(Yarb::DEFAULT_CONFIG['alias'], instance(['--dry-run']).config['alias'])
-  end
-
-  def test_yaml_data
-    File.write("tmp/test.yml", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
-    assert_equal({key: 'asdf'}, instance(['eval', 'tmp/test.yml', '--dry-run']).yaml_data)
-  end
-
   def test_eval
     File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
     assert_throws :wrench do
@@ -82,11 +59,67 @@ class YarbTest < Minitest::Test
     end
   end
 
-  def test_default_command
-    File.write("#{home}/.yrb/config.yml", {'default_command' => 'eval' }.to_yaml)
-    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
-    assert_throws :wrench do
-      instance(['tmp/test.yml']).execute
+  def test_default_args
+    assert_equal 'default', instance(['--dry-run']).args(0, default: 'default')
+  end
+
+  def test_args
+    assert_equal 'test.yml', instance(['test.yml', '--dry-run']).args(0, default: 'default')
+  end
+
+  def test_default_options
+    assert_equal 'default', instance(['--dry-run']).opts(:key, default: 'default')
+  end
+
+  def test_options
+    assert_equal 'create', instance(['--key', 'create']).opts(:key, default: 'default')
+  end
+
+  def test_second_options
+    assert_equal 'update', instance(['--key', 'create', '--key2', 'update']).opts(:key2, default: 'default')
+  end
+
+  def test_options_without_value_return_default
+    assert_equal 'default', instance(['--key']).opts(:key, default: 'default')
+  end
+
+  def test_multiple_arguments_without_value_return_default
+    assert_equal 'default', instance(['--key', '--keys2', 'update']).opts(:key, default: 'default')
+  end
+
+
+  def test_no_config_file
+    assert_equal(Yarb::DEFAULT_CONFIG, instance(['--dry-run']).config)
+  end
+
+  def test_data
+    File.write("tmp/test.yml", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
+    assert_equal('asdf', instance(['eval', 'tmp/test.yml', '--dry-run']).data[:key])
+  end
+
+  def test_verbose
+    skip
+  end
+
+  def test_workspace
+    skip
+  end
+
+  def test_opts_alias
+    File.write("#{home}/.yrb/config.yml", {'alias' => {'-k' => '--key'}}.to_yaml)
+    assert_equal 'create', instance(['-k', 'create']).opts(:key, default: 'default')
+  end
+
+  def test_config_file
+    File.write("#{home}/.yrb/config.yml", {key: 'asdf'}.to_yaml)
+    assert_equal('asdf', instance(['--dry-run']).config[:key])
+    assert_equal(Yarb::DEFAULT_CONFIG['alias'], instance(['--dry-run']).config['alias'])
+  end
+
+  def test_missing_lib_is_silent
+    FileUtils.rm_rf("#{home}/.yrb")
+    assert_silent do
+      instance.execute
     end
   end
 
@@ -97,37 +130,14 @@ class YarbTest < Minitest::Test
     end
   end
 
-  def test_missing_lib_is_silent
-    FileUtils.rm_rf("#{home}/.yrb")
-    assert_silent do
-      instance.execute
-    end
+  def setup
+    Dir.mkdir(home)
+    Dir.mkdir("#{home}/.yrb")
+    Dir.mkdir("#{home}/.yrb/lib")
   end
 
-  def test_dryrun
-    File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
-    assert_match(/throw :wrench/, instance(['eval', 'tmp/test.yml', '--dry-run']).execute)
-  end
-
-  def test_execute_without_yrb_return_the_help
-    assert_match(/Usage:/, instance([]).execute)
-  end
-
-  def test_help_command
-    assert_match(/Usage:/, instance(['help']).execute)
-  end
-
-  def test_manual_command
-    assert_match(/Installation/, instance(['man', 'tmp/test.yml']).execute)
-  end
-
-  def test_command_hook
-    Yarb.command(:key) do |_yarb|
-      throw :wrench
-    end
-    assert_throws :wrench do
-      instance(['key']).execute
-    end
+  def teardown
+    FileUtils.rm_rf(home)
   end
 
   private

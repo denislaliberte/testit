@@ -18,6 +18,8 @@ class Yarb
         help             output this message
         man              complete manual
         eval             load the yml file and evaluate the ruby in the 'eval' key
+        example          list key of available example
+        example [key]    optput example file
 
       Arguments:
 
@@ -30,11 +32,10 @@ class Yarb
 
       Options:
 
-        --example        list key of available example
-        --example [key]  optput example file
         --dry-run        dry run the commands
         --verbose        verbose output
-        --key [opts]     options to be used by the `opts(:key)` method
+        --key value      options, if present `opts(:key)` will return `value`
+        --key            flags, if present `flag?(:key)` will return true
 
       Synopsis
 
@@ -165,13 +166,14 @@ class Yarb
     @home = home
     @config = load_configuration
     @arguments = arguments
+    @data = load_data
     override_alias
-    load_files
+    load_lib
   end
 
   def execute
     if flag?(:dry_run)
-      YAML.dump(data).to_s
+      YAML.dump(@data).to_s
     elsif command?(args(0))
       execute_command(args(0))
     else
@@ -187,12 +189,7 @@ class Yarb
   command(:eval) { |yarb| yarb.evaluate }
 
   def evaluate
-    eval(data['eval'])
-  end
-
-  def path
-    return if args(1).nil? || !args(1).match(/\.yml$/)
-    args(1)
+    eval(@data['eval'])
   end
 
   def args(index, default: nil)
@@ -212,28 +209,12 @@ class Yarb
     end
   end
 
-  def string_key(symbol)
-    "--#{symbol.to_s.gsub('_','-')}"
-  end
-
   def config
     @config
   end
 
-  def yaml_data
-    yaml_template = File.read(path)
-    yaml = ERB.new(yaml_template).result(binding)
-    YAML.load(yaml)
-  end
-
   def data
-    override(@config, yaml_data)
-  end
-
-  def override(original, override)
-    original.merge(override) do |_key, original_value, value|
-      value.is_a?(Hash) ? original_value.merge(value) : value
-    end
+    @data
   end
 
   def verbose
@@ -263,16 +244,44 @@ class Yarb
     end
   end
 
+  def override(original, override)
+    original.merge(override) do |_key, original_value, value|
+      value.is_a?(Hash) ? original_value.merge(value) : value
+    end
+  end
+
+  def load_data
+    if path && File.file?(path)
+      yaml_template = File.read(path)
+      yaml = ERB.new(yaml_template).result(binding)
+      override(@config, YAML.load(yaml))
+    else
+      @config
+    end
+  end
+
+  def path
+    return if args(1).nil? || !args(1).match(/\.yml$/)
+    args(1)
+  end
+
+  def yaml_data
+  end
+
   def override_alias
     @arguments = @arguments.map {|argument| @config['alias'][argument].nil? ? argument : @config['alias'][argument] }
   end
 
-  def load_files
+  def load_lib
     Dir["#{workspace}/lib/*.rb"].each { |file| require file }
   end
 
   def include?(key)
     @arguments.include?(string_key(key))
+  end
+
+  def string_key(symbol)
+    "--#{symbol.to_s.gsub('_','-')}"
   end
 
   def command?(command)
