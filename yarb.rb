@@ -166,8 +166,11 @@ class Yarb
     @home = home
     @config = load_configuration
     @arguments = arguments
-    @data = load_data
+    unless command?(arguments[0])
+      @arguments.unshift(@config['default_command'])
+    end
     override_alias
+    @data = load_data
     load_lib
   end
 
@@ -189,6 +192,7 @@ class Yarb
   command(:eval) { |yarb| yarb.evaluate }
 
   def evaluate
+    return "WARNING nothing to evaluate" if @data['eval'].nil?
     eval(@data['eval'])
   end
 

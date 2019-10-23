@@ -36,7 +36,6 @@ class YarbTest < Minitest::Test
   end
 
   def test_default_command
-    skip "add default command to arguments before loading the data"
     File.write("#{home}/.yrb/config.yml", {'default_command' => 'eval' }.to_yaml)
     File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
     assert_throws :wrench do
@@ -60,11 +59,11 @@ class YarbTest < Minitest::Test
   end
 
   def test_default_args
-    assert_equal 'default', instance(['--dry-run']).args(0, default: 'default')
+    assert_equal 'default', instance(['eval', '--dry-run']).args(1, default: 'default')
   end
 
   def test_args
-    assert_equal 'test.yml', instance(['test.yml', '--dry-run']).args(0, default: 'default')
+    assert_equal 'test.yml', instance(['eval', 'test.yml', '--dry-run']).args(1, default: 'default')
   end
 
   def test_default_options
