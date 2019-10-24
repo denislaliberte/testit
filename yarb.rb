@@ -168,6 +168,14 @@ class Yarb
     @config = DEFAULT_CONFIG
   end
 
+  DEFAULT_CONFIG = {
+    'default_command' => 'help',
+    'alias' => {
+      '-h' => '--help',
+      '-d' => '--dry-run'
+    }
+  }
+
   def configure
     @config = override_configuration(@config)
     @arguments = override_arguments(@arguments, @config)
@@ -230,14 +238,6 @@ class Yarb
   end
 
   private
-
-  DEFAULT_CONFIG = {
-    'default_command' => 'help',
-    'alias' => {
-      '-h' => '--help',
-      '-d' => '--dry-run'
-    }
-  }
 
   def override_configuration(original)
     default_path = "#{workspace}/config.yml"
