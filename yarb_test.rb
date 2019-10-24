@@ -54,6 +54,18 @@ class YarbTest < Minitest::Test
     end
   end
 
+  def test_eval_help
+    help_text = 'use this command to throw a wrench'
+    File.write('tmp/test.yml', {'eval' => 'throw :wrench', 'help' => help_text}.to_yaml)
+    assert_equal help_text, instance(['eval', 'tmp/test.yml', '--help']).execute
+  end
+
+  def test_eval_help_without_text
+    yaml_content = {'eval' => 'throw :wrench'}.to_yaml
+    File.write('tmp/test.yml', yaml_content)
+    assert_equal yaml_content, instance(['eval', 'tmp/test.yml', '--help']).execute
+  end
+
   def test_default_args
     assert_equal 'default', instance(['eval', '--dry-run']).args(1, default: 'default')
   end

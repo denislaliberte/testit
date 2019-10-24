@@ -179,7 +179,8 @@ class Yarb
   def configure
     @config = override_configuration(@config)
     @arguments = override_arguments(@arguments, @config)
-    @data = load_data(get_path(@arguments))
+    @template = get_template(get_path(@arguments))
+    @data = load_data(@template, @config)
     load_lib
     self
   end
@@ -200,6 +201,11 @@ class Yarb
   command(:eval) { |yarb| yarb.evaluate }
 
   def evaluate
+    if flag?(:help)
+      return @template if @data['help'].nil?
+      return @data['help']
+    end
+
     return "WARNING nothing to evaluate" if @data['eval'].nil?
     eval(@data['eval'])
   end
@@ -267,24 +273,30 @@ class Yarb
     end
   end
 
-  def load_data(path)
-    if path && File.file?(path)
-      log("Yarb#load_data path: #{path}")
-      yaml_template = File.read(path)
-      yaml = ERB.new(yaml_template).result(binding)
-      config = override(@config, YAML.load(yaml))
+  def load_data(template, original_conf)
+    if template
+      yaml = ERB.new(template).result(binding)
+      config = override(original_conf, YAML.load(yaml))
     else
-      log("Yarb#load_data no path")
-      config = @config
+      config = original_conf
     end
     datalog(config: config)
 
     config
   end
 
+  def get_template(path)
+    if path && File.file?(path)
+      log("Yarb#get_template path: #{path}")
+      @yaml_template = File.read(path)
+    else
+      log("Yarb#get_template path: #{path}")
+    end
+  end
+
   def get_path(arguments)
     return if arguments[1].nil? || !arguments[1].match(/\.yml$/)
-    args(1)
+    arguments[1]
   end
 
   def yaml_data
