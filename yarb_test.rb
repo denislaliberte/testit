@@ -17,10 +17,6 @@ class YarbTest < Minitest::Test
     assert_match(/Installation/, instance(['man', 'tmp/test.yml']).execute)
   end
 
-  def test_example
-    skip
-  end
-
   def test_dryrun
     File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
     assert_match(/throw :wrench/, instance(['eval', 'tmp/test.yml', '--dry-run']).execute)
@@ -94,14 +90,6 @@ class YarbTest < Minitest::Test
   def test_data
     File.write("tmp/test.yml", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
     assert_equal('asdf', instance(['eval', 'tmp/test.yml', '--dry-run']).configure.data[:key])
-  end
-
-  def test_verbose
-    skip
-  end
-
-  def test_workspace
-    skip
   end
 
   def test_opts_alias
