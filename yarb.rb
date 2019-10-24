@@ -177,11 +177,11 @@ class Yarb
   }
 
   def configure
+    load_lib
     @config = override_configuration(@config)
     @arguments = override_arguments(@arguments, @config)
     @template = get_template(get_path(@arguments))
     @data = load_data(@template, @config)
-    load_lib
     self
   end
 
@@ -303,6 +303,8 @@ class Yarb
   end
 
   def override_arguments(arguments, config)
+    arguments = execute_hook(:before_override_arguments, {yarb: self, arguments: arguments})[:arguments]
+
     unless command?(arguments[0])
       log("Yarb#override_arguments default_command: #{config['default_command']}")
       arguments.unshift(config['default_command'])
@@ -319,6 +321,21 @@ class Yarb
     datalog(arguments: arguments)
 
     arguments
+  end
+
+  @@hooks = Hash.new { |h, k| h[k] = [] }
+
+  def self.register_hook(key, &block)
+    @@hooks[key].concat(Array(block))
+  end
+
+  def self.clear_hook(key)
+    @@hooks[key] = [ ]
+  end
+
+  def execute_hook(key, args)
+    return args if @@hooks[key].empty?
+    @@hooks[key].inject(args) {|arguments, hook| hook.call(arguments) }
   end
 
   def load_lib

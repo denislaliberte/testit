@@ -109,6 +109,15 @@ class YarbTest < Minitest::Test
     assert_equal 'create', instance(['-k', 'create']).configure.opts(:key, default: 'default')
   end
 
+  def test_before_override_arguments
+    Yarb.register_hook(:before_override_arguments) do |args|
+      args[:arguments] = ['eval']
+      args
+    end
+    assert_equal 'eval', instance(['to_be_removed']).configure.args(0)
+    Yarb.clear_hook(:before_override_arguments)
+  end
+
   def test_config_file
     File.write("#{home}/.yrb/config.yml", {key: 'asdf'}.to_yaml)
     assert_equal('asdf', instance(['--dry-run']).configure.config[:key])
