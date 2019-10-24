@@ -93,7 +93,7 @@ class YarbTest < Minitest::Test
 
   def test_data
     File.write("tmp/test.yml", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
-    assert_equal('asdf', instance(['eval', 'tmp/test.yml', '--dry-run']).data[:key])
+    assert_equal('asdf', instance(['eval', 'tmp/test.yml', '--dry-run']).configure.data[:key])
   end
 
   def test_verbose
@@ -106,12 +106,12 @@ class YarbTest < Minitest::Test
 
   def test_opts_alias
     File.write("#{home}/.yrb/config.yml", {'alias' => {'-k' => '--key'}}.to_yaml)
-    assert_equal 'create', instance(['-k', 'create']).opts(:key, default: 'default')
+    assert_equal 'create', instance(['-k', 'create']).configure.opts(:key, default: 'default')
   end
 
   def test_config_file
     File.write("#{home}/.yrb/config.yml", {key: 'asdf'}.to_yaml)
-    assert_equal('asdf', instance(['--dry-run']).config[:key])
+    assert_equal('asdf', instance(['--dry-run']).configure.config[:key])
     assert_equal(Yarb::DEFAULT_CONFIG['alias'], instance(['--dry-run']).config['alias'])
   end
 

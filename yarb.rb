@@ -165,13 +165,19 @@ class Yarb
   def initialize(arguments, home)
     @home = home
     @arguments = arguments
-    @config = load_configuration
-    override_arguments
-    @data = load_data
+    @config = DEFAULT_CONFIG
+  end
+
+  def configure
+    @config = override_configuration(@config)
+    @arguments = override_arguments(@arguments, @config)
+    @data = load_data(get_path(@arguments))
     load_lib
+    self
   end
 
   def execute
+    configure
     if flag?(:dry_run)
       YAML.dump(@data).to_s
     else
@@ -233,14 +239,14 @@ class Yarb
     }
   }
 
-  def load_configuration
+  def override_configuration(original)
     default_path = "#{workspace}/config.yml"
     if File.file?(default_path)
-      log("Yarb#load_configuration default_path : #{default_path}")
-      config = override(DEFAULT_CONFIG, YAML.load_file(default_path))
+      log("Yarb#override_configuration default_path : #{default_path}")
+      config = override(original, YAML.load_file(default_path))
     else
-      log("Yarb#load_configuration DEFAULT_CONFIG")
-      config = DEFAULT_CONFIG
+      log("Yarb#override_configuration DEFAULT_CONFIG")
+      config = original
     end
     datalog(config: config)
 
@@ -261,7 +267,7 @@ class Yarb
     end
   end
 
-  def load_data
+  def load_data(path)
     if path && File.file?(path)
       log("Yarb#load_data path: #{path}")
       yaml_template = File.read(path)
@@ -276,29 +282,31 @@ class Yarb
     config
   end
 
-  def path
-    return if args(1).nil? || !args(1).match(/\.yml$/)
+  def get_path(arguments)
+    return if arguments[1].nil? || !arguments[1].match(/\.yml$/)
     args(1)
   end
 
   def yaml_data
   end
 
-  def override_arguments
-    unless command?(@arguments[0])
-      log("Yarb#override_arguments default_command: #{@config['default_command']}")
-      @arguments.unshift(@config['default_command'])
+  def override_arguments(arguments, config)
+    unless command?(arguments[0])
+      log("Yarb#override_arguments default_command: #{config['default_command']}")
+      arguments.unshift(config['default_command'])
     end
-    @arguments = @arguments.map do |argument|
-      if @config['alias'][argument].nil?
+    arguments = arguments.map do |argument|
+      if config['alias'][argument].nil?
         argument
       else
-        log("Yarb#override_arguments argument #{argument} alias #{@config['alias'][argument]}")
-        @config['alias'][argument]
+        log("Yarb#override_arguments argument #{argument} alias #{config['alias'][argument]}")
+        config['alias'][argument]
       end
     end
 
-    datalog(arguments: @arguments)
+    datalog(arguments: arguments)
+
+    arguments
   end
 
   def load_lib
