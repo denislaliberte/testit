@@ -246,6 +246,8 @@ class Yarb
       end
     end
 
+    arguments = execute_hook(:after_override_arguments, {yarb: self, arguments: arguments})[:arguments]
+
     datalog(arguments: arguments)
 
     arguments
