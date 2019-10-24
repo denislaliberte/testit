@@ -18,8 +18,6 @@ class Yarb
         help             output this message
         man              complete manual
         eval             load the yml file and evaluate the ruby in the 'eval' key
-        example          list key of available example
-        example [key]    optput example file
 
       Arguments:
 
@@ -84,82 +82,11 @@ class Yarb
       ~/yarb.rb --help
       ```
 
-      ## examples file
-
-      ### simple example
-      ```
-      <%= example[:simple] %>
-      ```
-
-      ### config example
-
-      You can add a config file to your home directory, the value of this file will be used
-      as default on all of your query
-      ```
-      <%= example[:config] %>
-      ```
-
       ## License
       [MIT](https://choosealicense.com/licenses/mit/)
     MANUAL
 
     return ERB.new(template).result(binding)
-  end
-
-  def example
-    example = {}
-
-    example[:simple] = <<~EXAMPLE
-    ---
-    url: "https://api.example.com/surprise"
-    key: banana
-    secret: coconuts
-    payload:
-      appID: placeholder
-      userID: placeholder
-      variables:
-        first: 10
-      query: >-
-        query PriceRules($first: Int) {
-          priceRules(first: $first) {
-            edges{
-              node{
-                id
-              }
-            }
-          }
-        }
-    EXAMPLE
-
-    example[:config] = <<~EXAMPLE
-    ---
-    # save this file to $HOME/.yrb/config.yml
-    # for `--on prod` use $HOME/.yrb/prod.yml
-    url: "https://api.example.com/surprise"
-    key: banana
-    secret: coconuts
-    payload:
-      appID: placeholder
-      userID: placeholder
-    EXAMPLE
-
-    example[:complex] = <<~EXAMPLE
-    testit_with:
-      query_file:
-
-    payload:
-      operationName: <%= opts(:action, 'create') %>
-      query: <%= files('query_file') %>
-      schemaHandle: <%= opts(:schmea, 'merchant') %>
-      versionHandle: <%= opts(:schmea, 'unstable') %>
-      variables:
-        id: "gid://shopify/DiscountCodeNode/1",
-        discount:
-          title: asdf
-          startsAt: "2021-05-06T13:20:03Z",
-          endsAt: "2022-05-06T13:20:03Z",
-    EXAMPLE
-    return example
   end
 
   def initialize(arguments, home)
@@ -309,6 +236,7 @@ class Yarb
       log("Yarb#override_arguments default_command: #{config['default_command']}")
       arguments.unshift(config['default_command'])
     end
+    #todo move to .yml/lib/alias.rb
     arguments = arguments.map do |argument|
       if config['alias'][argument].nil?
         argument
