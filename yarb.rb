@@ -97,10 +97,6 @@ class Yarb
 
   DEFAULT_CONFIG = {
     'default_command' => 'help',
-    'alias' => {
-      '-h' => '--help',
-      '-d' => '--dry-run'
-    }
   }
 
   def configure
@@ -226,24 +222,12 @@ class Yarb
     arguments[1]
   end
 
-  def yaml_data
-  end
-
   def override_arguments(arguments, config)
     arguments = execute_hook(:before_override_arguments, {yarb: self, arguments: arguments})[:arguments]
 
     unless command?(arguments[0])
       log("Yarb#override_arguments default_command: #{config['default_command']}")
       arguments.unshift(config['default_command'])
-    end
-    #todo move to .yml/lib/alias.rb
-    arguments = arguments.map do |argument|
-      if config['alias'][argument].nil?
-        argument
-      else
-        log("Yarb#override_arguments argument #{argument} alias #{config['alias'][argument]}")
-        config['alias'][argument]
-      end
     end
 
     arguments = execute_hook(:after_override_arguments, {yarb: self, arguments: arguments})[:arguments]
