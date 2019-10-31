@@ -8,6 +8,10 @@ objective:
 - with name space for the whole data (info, config, cmd)
   * using the same pattern to overrite everything from default, to config file, to command line, to yaml files
   * be able to save and execute cmd in history
+- command can have only one argument use for the file, all other needs to be in ops
+  * yarb [commands] file [opts][flags]
+  * warning if there is no file after the config
+  * add --help flag if there is no file
 - keep the code rewritable, under 350 lines of code
 
 todo:
