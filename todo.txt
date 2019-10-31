@@ -1,3 +1,17 @@
+# V0.3
+
+objective:
+
+- clean rewrite
+- with integration testing using example for yml files and extension, to have a complete documentation and test
+- with proper loggin warning and info to be able to debug quicly
+- with name space for the whole data (info, config, cmd)
+  * using the same pattern to overrite everything from default, to config file, to command line, to yaml files
+  * be able to save and execute cmd in history
+- keep the code rewritable, under 350 lines of code
+
+todo:
+
 - yarb --help
 - yarb  without a command name
   * log :warning no command
