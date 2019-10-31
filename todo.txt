@@ -1,0 +1,19 @@
+- yarb --help
+- yarb  without a command name
+  * log :warning no command
+  * execute default command :help
+  * override default command from config
+  * log :info override the default command from the config file
+- yarb example yml
+  * output the manual.yml
+  * yarb eval manual.yml --help return the info.help
+  * log :warning if the yml file dont have a info.help message
+  * test that Readme.md and yarb manual.yml argument_example --install --example options_example are equal
+- yarb example extension
+  * output the extension.rb file
+  * default config hook extension list and status
+  * command example download extension
+  * before_config hook require the .rb file of the enable extension
+- mysql extension on it's own repos
+- graphql extension on it's own repos
+
