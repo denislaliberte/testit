@@ -19,7 +19,7 @@ class YarbTest < Minitest::Test
 
   def test_dryrun
     File.write('tmp/test.yml', {'eval' => 'throw :wrench'}.to_yaml)
-    assert_match(/throw :wrench/, instance(['eval', 'tmp/test.yml', '--dry-run']).execute)
+    assert_match(/throw :wrench/, instance(['eval', 'tmp/test.yml', '--dry_run']).execute)
   end
 
   def test_command_hook
@@ -67,15 +67,15 @@ class YarbTest < Minitest::Test
   end
 
   def test_default_args
-    assert_equal 'default', instance(['eval', '--dry-run']).args(1, default: 'default')
+    assert_equal 'default', instance(['eval', '--dry_run']).args(1, default: 'default')
   end
 
   def test_args
-    assert_equal 'test.yml', instance(['eval', 'test.yml', '--dry-run']).args(1, default: 'default')
+    assert_equal 'test.yml', instance(['eval', 'test.yml', '--dry_run']).args(1, default: 'default')
   end
 
   def test_default_options
-    assert_equal 'default', instance(['--dry-run']).opts(:key, default: 'default')
+    assert_equal 'default', instance(['--dry_run']).opts(:key, default: 'default')
   end
 
   def test_options
@@ -83,7 +83,7 @@ class YarbTest < Minitest::Test
   end
 
   def test_second_options
-    assert_equal 'update', instance(['--key', 'create', '--key2', 'update']).opts(:key2, default: 'default')
+    assert_equal 'update', instance(['--key', 'create', '--key_2', 'update']).opts(:key_2)
   end
 
   def test_options_without_value_return_default
@@ -96,12 +96,12 @@ class YarbTest < Minitest::Test
 
 
   def test_no_config_file
-    assert_equal(Yarb::DEFAULT_CONFIG, instance(['--dry-run']).config)
+    assert_equal(Yarb::DEFAULT_CONFIG, instance(['--dry_run']).config)
   end
 
   def test_data
     File.write("tmp/test.yml", {key: '<%= opts(0, default: "asdf") %>'}.to_yaml)
-    assert_equal('asdf', instance(['eval', 'tmp/test.yml', '--dry-run']).configure.data[:key])
+    assert_equal('asdf', instance(['eval', 'tmp/test.yml', '--dry_run']).configure.data[:key])
   end
 
   def test_before_override_arguments

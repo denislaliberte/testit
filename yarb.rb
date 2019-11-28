@@ -30,14 +30,14 @@ class Yarb
 
       Options:
 
-        --dry-run        dry run the commands
+        --dry_run        dry run the commands
         --verbose        verbose output
         --key value      options, if present `opts(:key)` will return `value`
         --key            flags, if present `flag?(:key)` will return true
 
       Synopsis
 
-        ~/yarb.rb variables.yml test --dry-run
+        ~/yarb.rb variables.yml test --dry_run
     USAGE
   end
 
@@ -261,7 +261,7 @@ class Yarb
   end
 
   def string_key(symbol)
-    "--#{symbol.to_s.gsub('_','-')}"
+    "--#{symbol.to_s}"
   end
 
   def command?(command)
