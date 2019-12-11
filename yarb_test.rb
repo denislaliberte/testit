@@ -9,7 +9,7 @@ module Yarb
   class YarbTest < Minitest::Test
     def test_help
       assert_silent { Yarb.new(['--help']).configure.execute }
-      assert_match(/--help.*output this message/, Yarb.new(['--help']).configure.execute)
+      assert_match(/--help.*Output this message/, Yarb.new(['--help']).configure.execute)
     end
 
     def test_example

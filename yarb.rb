@@ -22,9 +22,13 @@ module Yarb
     DEFAULT_CONFIG = {
       'log-level' => 'info',
       'usage' => %(
+        Synopsis
+          ~/yarb.rb file.yml [options]
+          ~/yarb.rb --example
+
         Flags
-          --help         output this message
-          --example      return the example
+          --help         Output this message or the usage of the file if provided
+          --example      Output the example
 
         Options
           --log-level    set the level of the log to output
