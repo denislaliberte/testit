@@ -170,17 +170,31 @@ manual: |+
   # [ YARB! ](https://github.com/denislaliberte/yarb)
   <% if option(:version) %>version: <%= option(:version) %><% end %>
 
+  Use Yaml And RuBy to create simple command line tools quickly
+
   <% if flag?(:install) %>
   ## installation
 
+  YARB is a stand alone script using only the ruby standard librairy, install it with wget
+
+  ```
+  wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/yarb.rb
+  chmod -x ~/yarb.rb
+  ~/yarb.rb --help
+  ```
   <% end %>
 
   ## how to
 
   Save the example file
-  `$ yarb example > manual.yml`
+  `$ yarb --example > manual.yml`
 
   Evaluate the yaml file to output the manual
-  `$ yarb evaluate manual.yml`
+  `$ yarb manual.yml`
 
-eval: return data['manual']
+
+  ## License
+  [MIT](https://choosealicense.com/licenses/mit/)
+
+eval: |+
+  return data['manual']
