@@ -35,6 +35,16 @@ module Yarb
       assert_equal 'asdfqwer', Yarb.new(['tmp/test.yml'], workspace: home).configure.execute
     end
 
+    def test_help_message
+      help_message = %(
+            Usage
+              synopsis:
+                yarb test.yml
+      ).squish
+      File.write('tmp/test.yml', { 'usage' => help_message }.to_yaml)
+      assert_equal help_message, Yarb.new(['tmp/test.yml', '--help']).configure.execute
+    end
+
     def test_options
       arguments = ['--key', 'value']
       assert_equal 'value', Yarb.new(arguments).configure.option(:key)

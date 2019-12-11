@@ -20,7 +20,16 @@ module Yarb
     end
 
     DEFAULT_CONFIG = {
-      'log-level' => 'info'
+      'log-level' => 'info',
+      'usage' => %(
+        Flags
+          --help         output this message
+          --example      return the example
+
+        Options
+          --log-level    set the level of the log to output
+                          values: debug, info, warning, error, fatal, off
+      )
     }.freeze
 
     def configure
@@ -41,7 +50,7 @@ module Yarb
     end
 
     def execute
-      return usage if flag?(:help)
+      return option(:usage, default: 'There is no help defined') if flag?(:help)
       return example if flag?(:example)
 
       log(:debug, "execute #{@data.to_yaml}")
@@ -106,18 +115,6 @@ module Yarb
       data.recursive_merge(argument_data)
     end
 
-    def usage
-      <<~HELP
-        Flags
-          --help:         output this message
-          --example:      return the example
-
-        Options:
-          --log-level:    set the level of the log to output
-                          values: #{Logger::LOG_LEVEL.keys.join(', ')}
-      HELP
-    end
-
     def example
       File.read(__FILE__).split(/^__END__$/, 2).last
     end
@@ -157,10 +154,17 @@ puts Yarb::Yarb.new(ARGV, workspace: "#{ENV['HOME']}/.yrb").configure.execute if
 
 __END__
 ---
-# manual example
+usage: |+
+  Generate the yarb manual
+
+  Synopsis:
+    yarb manual.yml
+    yarb manual.yml --version 1.0
+    yarb manual.yml --install
+
 manual: |+
   # [ YARB! ](https://github.com/denislaliberte/yarb)
-  version: <%= option(:version) %>
+  <% if option(:version) %>version: <%= option(:version) %><% end %>
 
   <% if flag?(:install) %>
   ## installation
