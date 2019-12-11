@@ -1,288 +1,209 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
-require 'erb'
 require 'yaml'
+require 'erb'
+require 'forwardable'
 
-class Yarb
-  def description
-    "Use Yaml And RuBy to create simple command line tools quickly"
-  end
+module Yarb
+  class Yarb
+    extend Forwardable
+    attr_reader :data
 
-  def usage
-    <<~USAGE.chomp
-      Usage:
-        ~/yarb.rb [command] [arguments] [options]
+    def_delegators :@logger, :log
 
-      Commands:
-
-        help             output this message
-        man              complete manual
-        eval             load the yml file and evaluate the ruby in the 'eval' key
-
-      Arguments:
-
-        The first arguement is the path to a yml file containing the variables
-
-        The yml file can contain erb and use
-          <%= args(n) %> to get the value of arguments at position n
-          <%= opts(:key) %> to get the value of `--key value`
-          <% if opts?(:key) %> that return true if `--key` is used
-
-      Options:
-
-        --dry_run        dry run the commands
-        --verbose        verbose output
-        --key value      options, if present `opts(:key)` will return `value`
-        --key            flags, if present `flag?(:key)` will return true
-
-      Synopsis
-
-        ~/yarb.rb variables.yml test --dry_run
-    USAGE
-  end
-
-  def self.command(command, &block)
-    @@command[command.to_s] = block
-  end
-
-  @@command = {}
-
-  command(:help) { |yarb| yarb.help }
-
-  def help
-    template = <<~HELP.chomp
-      <%= description %>
-
-      <%= usage %>
-    HELP
-    ERB.new(template).result(binding)
-  end
-
-  command(:man) { |yarb| yarb.manual }
-
-  def manual
-    template = <<~MANUAL.chomp
-      # [ YARB! ](https://github.com/denislaliberte/yarb)
-
-      <%= description %>
-
-      ## usage
-
-      ```
-      <%= usage %>
-      ```
-
-      ## Installation
-
-      YARB is a stand alone script using only the ruby standard librairy, install it with wget
-
-      ```
-      wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/yarb.rb
-      chmod -x ~/yarb.rb
-      ~/yarb.rb --help
-      ```
-
-      ## License
-      [MIT](https://choosealicense.com/licenses/mit/)
-    MANUAL
-
-    return ERB.new(template).result(binding)
-  end
-
-  def initialize(arguments, home)
-    @home = home
-    @arguments = arguments
-    @config = DEFAULT_CONFIG
-  end
-
-  DEFAULT_CONFIG = {
-    'default_command' => 'help',
-  }
-
-  def configure
-    load_lib
-    @config = override_configuration(@config)
-    @arguments = override_arguments(@arguments, @config)
-    @template = get_template(get_path(@arguments))
-    @data = load_data(@template, @config)
-    self
-  end
-
-  def execute
-    configure
-    if flag?(:dry_run)
-      YAML.dump(@data).to_s
-    else
-      execute_command(args(0))
-    end
-  end
-
-  def flag?(key)
-    include?(key)
-  end
-
-  command(:eval) { |yarb| yarb.evaluate }
-
-  def evaluate
-    if flag?(:help)
-      return @template if @data['help'].nil?
-      return @data['help']
+    def initialize(arguments, workspace: nil)
+      @workspace = workspace
+      @data = Hash.new { |h, k| h[k] = {} }
+      @raw_arguments = arguments
+      @logger = Logger.new
     end
 
-    return "WARNING nothing to evaluate" if @data['eval'].nil?
-    eval(@data['eval'])
-  end
+    DEFAULT_CONFIG = {
+      'log-level' => 'info',
+      'usage' => %(
+        Synopsis
+          ~/yarb.rb file.yml [options]
+          ~/yarb.rb --example
 
-  def args(index, default: nil)
-    argument = @arguments.reject { |arg| arg.match(/^-/)}.at(index)
-    return default if argument.nil?
-    argument
-  end
+        Flags
+          --help         Output this message or the usage of the file if provided
+          --example      Output the example
 
-  def opts(key, default: nil)
-    return default unless include?(key)
-    value = argument_value(key)
+        Options
+          --log-level    set the level of the log to output
+                          values: debug, info, warning, error, fatal, off
+      )
+    }.freeze
 
-    if value.nil?
+    def configure
+      load_lib
+      config = get_config(DEFAULT_CONFIG)
+      @data = add_command_data(@raw_arguments, config)
+      @logger.level = option('log-level').to_sym
+      log('debug', "LogLevel changed to #{@logger.level}")
+      @data = get_argument_data(@data)
+      self
+    end
+
+    def get_config(default)
+      return default unless File.file?("#{@workspace}/config.yml")
+
+      file_data = YAML.load_file("#{@workspace}/config.yml")
+      default.recursive_merge(file_data)
+    end
+
+    def execute
+      return option(:usage, default: 'There is no help defined') if flag?(:help)
+      return source if flag?(:source)
+      return example if flag?(:example)
+
+      log(:debug, "execute #{@data.to_yaml}")
+
+      evaluate
+    end
+
+    def option(key, default: nil)
+      value = data[key.to_s]
+      value.nil? ? default : value
+    end
+    alias opts option
+
+    def flag?(key)
+      data[key.to_s]
+    end
+
+    private
+
+    def load_lib
+      return if @workspace.nil?
+
+      Dir["#{@workspace}/lib/*.rb"].each { |file| require file }
+    end
+
+    def add_command_data(raw_arguments, default)
+      arguments = filter_flag(raw_arguments)
       default
-    else
-      value
+        .recursive_merge('argument' => arguments[0])
+        .recursive_merge(get_options(raw_arguments))
+        .recursive_merge(get_flags(raw_arguments))
+    end
+
+    def filter_flag(raw_arguments)
+      first_flag_index = raw_arguments.index { |arg| /^--/.match(arg) }
+      first_flag_index.nil? ? raw_arguments : raw_arguments.take(first_flag_index)
+    end
+
+    def get_options(arguments)
+      arguments
+        .select { |key| key.match(/^--/) } # an option key is prefix with two dash : --key
+        .map { |key| [key.gsub('--', ''), arguments[arguments.index(key) + 1]] } # the value follow the key : --key value
+        .select { |_key, value| !value.nil? && !value.match(/^--/) } # key not follow by a value is not a option
+        .to_h
+    end
+
+    def get_flags(arguments)
+      arguments
+        .select { |key| key.match(/^--/) } # an option key is prefix with two dash : --key
+        .map { |key| [key.gsub('--', ''), arguments[arguments.index(key) + 1]] } # the value follow the key : --key value
+        .select { |_key, value| value.nil? || value.match(/^--/) } # key not follow by a value is not a option
+        .map { |key, _value| [key, true] }
+        .to_h
+    end
+
+    def get_argument_data(data)
+      return data unless @data['argument']
+
+      yaml = ERB.new(source).result(binding)
+      argument_data = YAML.safe_load(yaml)
+      data.recursive_merge(argument_data)
+    end
+
+    def source
+      File.read(@data['argument'])
+    end
+
+    def example
+      File.read(__FILE__).split(/^__END__$/, 2).last
+    end
+
+    def evaluate
+      return log(:warning, 'eval key is missing') if data['eval'].nil? || data['eval'].empty?
+
+      eval(data['eval'])
     end
   end
 
-  def config
-    @config
-  end
+  class Logger
+    LOG_LEVEL = { debug: 5, info: 4, warning: 3, error: 2, fatal: 1, off: 0 }.freeze
+    attr_accessor :level
 
-  def data
-    @data
-  end
+    def initialize(level: :warning)
+      raise ArgumentError, "#{level} is not a valid log level" unless LOG_LEVEL.keys.include?(level.to_sym)
 
-  def verbose?
-    flag?(:verbose)
-  end
-
-  def workspace
-    "#{@home}/.yrb"
-  end
-
-  private
-
-  def override_configuration(original)
-    default_path = "#{workspace}/config.yml"
-    if File.file?(default_path)
-      log("Yarb#override_configuration default_path : #{default_path}")
-      config = override(original, YAML.load_file(default_path))
-    else
-      log("Yarb#override_configuration DEFAULT_CONFIG")
-      config = original
+      @level = level.to_sym
     end
-    datalog(config: config)
 
-    config
+    def log(level, message)
+      puts "#{level}: #{message}" if LOG_LEVEL[level.to_sym] <= LOG_LEVEL[@level]
+    end
   end
+end
 
-  def log(message)
-    puts message if verbose?
-  end
-
-  def datalog(data)
-    puts YAML.dump(data) if verbose?
-  end
-
-  def override(original, override)
-    original.merge(override) do |_key, original_value, value|
+class Hash
+  def recursive_merge(override)
+    merge(override) do |_key, original_value, value|
       value.is_a?(Hash) ? original_value.merge(value) : value
     end
   end
-
-  def load_data(template, original_conf)
-    if template
-      yaml = ERB.new(template).result(binding)
-      config = override(original_conf, YAML.load(yaml))
-    else
-      config = original_conf
-    end
-    datalog(config: config)
-
-    config
-  end
-
-  def get_template(path)
-    if path && File.file?(path)
-      log("Yarb#get_template path: #{path}")
-      @yaml_template = File.read(path)
-    else
-      log("Yarb#get_template path: #{path}")
-    end
-  end
-
-  def get_path(arguments)
-    return if arguments[1].nil? || !arguments[1].match(/\.yml$/)
-    arguments[1]
-  end
-
-  def override_arguments(arguments, config)
-    arguments = execute_hook(:before_override_arguments, {yarb: self, arguments: arguments})[:arguments]
-
-    unless command?(arguments[0])
-      log("Yarb#override_arguments default_command: #{config['default_command']}")
-      arguments.unshift(config['default_command'])
-    end
-
-    arguments = execute_hook(:after_override_arguments, {yarb: self, arguments: arguments})[:arguments]
-
-    datalog(arguments: arguments)
-
-    arguments
-  end
-
-  @@hooks = Hash.new { |h, k| h[k] = [] }
-
-  def self.register_hook(key, &block)
-    @@hooks[key].concat(Array(block))
-  end
-
-  def self.clear_hook(key)
-    @@hooks[key] = [ ]
-  end
-
-  def execute_hook(key, args)
-    return args if @@hooks[key].empty?
-    @@hooks[key].inject(args) {|arguments, hook| hook.call(arguments) }
-  end
-
-  def load_lib
-    Dir["#{workspace}/lib/*.rb"].each { |file| require file }
-  end
-
-  def include?(key)
-    @arguments.include?(string_key(key))
-  end
-
-  def string_key(symbol)
-    "--#{symbol.to_s}"
-  end
-
-  def command?(command)
-    !@@command[command].nil?
-  end
-
-  def execute_command(command)
-    return unless command?(command)
-    @@command[command].call(self)
-  end
-
-  def argument_value(key)
-    index = string_key(key)
-    return nil if @arguments.index(index).nil?
-    position = @arguments.index(index) + 1
-    return nil if /^-/.match(@arguments[position])
-    @arguments[position]
-  end
 end
 
-if caller.length == 0
-  puts Yarb.new(ARGV, ENV['HOME']).execute
-end
+puts Yarb::Yarb.new(ARGV, workspace: "#{ENV['HOME']}/.yrb").configure.execute if caller.empty?
 
+__END__
+---
+usage: |+
+  Generate the yarb manual
+
+  Synopsis:
+    yarb manual.yml
+    yarb manual.yml --version 1.0
+    yarb manual.yml --install
+
+manual: |+
+  # [ YARB! ](https://github.com/denislaliberte/yarb)
+  <% if option(:version) %>version: <%= option(:version) %><% end %>
+
+  Use Yaml And RuBy to create simple command line tools quickly
+
+  <% if flag?(:install) %>
+  ## installation
+
+  YARB is a stand alone script using only the ruby standard librairy, install it with wget
+
+  ```
+  wget ~ https://raw.githubusercontent.com/denislaliberte/yarb/master/yarb.rb
+  chmod -x ~/yarb.rb
+  ~/yarb.rb --help
+  ```
+  <% end %>
+
+  ## usage
+  ```
+  <%= DEFAULT_CONFIG['usage'] %>
+  ```
+
+  ## how to
+
+  Save the example file
+  `$ yarb --example > manual.yml`
+
+  Evaluate the yaml file to output the manual
+  `$ yarb manual.yml`
+
+
+  ## License
+  [MIT](https://choosealicense.com/licenses/mit/)
+
+eval: |+
+  return data['manual']
