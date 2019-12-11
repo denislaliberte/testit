@@ -45,6 +45,12 @@ module Yarb
       assert_equal help_message, Yarb.new(['tmp/test.yml', '--help']).configure.execute
     end
 
+    def test_source_return_the_file_content_for_debug_purpose
+      source = { 'eval' => 'puts "this script output this message"' }.to_yaml
+      File.write('tmp/test.yml', source)
+      assert_equal source, Yarb.new(['tmp/test.yml', '--source']).configure.execute
+    end
+
     def test_options
       arguments = ['--key', 'value']
       assert_equal 'value', Yarb.new(arguments).configure.option(:key)

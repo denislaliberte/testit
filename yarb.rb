@@ -51,6 +51,7 @@ module Yarb
 
     def execute
       return option(:usage, default: 'There is no help defined') if flag?(:help)
+      return source if flag?(:source)
       return example if flag?(:example)
 
       log(:debug, "execute #{@data.to_yaml}")
@@ -107,12 +108,15 @@ module Yarb
     end
 
     def get_argument_data(data)
-      return data unless data['argument']
+      return data unless @data['argument']
 
-      template = File.read(data['argument'])
-      yaml = ERB.new(template).result(binding)
+      yaml = ERB.new(source).result(binding)
       argument_data = YAML.safe_load(yaml)
       data.recursive_merge(argument_data)
+    end
+
+    def source
+      File.read(@data['argument'])
     end
 
     def example
