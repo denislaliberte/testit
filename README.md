@@ -15,6 +15,19 @@ chmod -x ~/yarb.rb
 ```
 
 
+## usage
+```
+
+      Flags
+        --help         output this message
+        --example      return the example
+
+      Options
+        --log-level    set the level of the log to output
+                        values: debug, info, warning, error, fatal, off
+    
+```
+
 ## how to
 
 Save the example file

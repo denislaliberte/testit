@@ -184,6 +184,11 @@ manual: |+
   ```
   <% end %>
 
+  ## usage
+  ```
+  <%= DEFAULT_CONFIG['usage'] %>
+  ```
+
   ## how to
 
   Save the example file
