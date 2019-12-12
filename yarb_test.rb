@@ -77,6 +77,16 @@ module Yarb
       refute Yarb.new(arguments).configure.flag?(:key)
     end
 
+    def test_noop_flag
+      source = { 'eval' => 'throw :wrench' }
+      File.write('tmp/test.yml', source.to_yaml)
+      File.write("#{home}/config.yml", { 'key' => 'config' }.to_yaml)
+      expected_return = Yarb::DEFAULT_CONFIG.merge(
+        'argument' => 'tmp/test.yml', 'eval' => 'throw :wrench', 'noop' => true, 'key' => 'config'
+      )
+      assert_equal expected_return, Yarb.new(['tmp/test.yml', '--noop'], workspace: home).configure.execute
+    end
+
     def test_eval_without_a_file_output_a_warning
       File.write('tmp/manual.yml', {}.to_yaml)
       assert_output(/warning: eval key is missing/) { Yarb.new(['tmp/manual.yml']).configure.execute }

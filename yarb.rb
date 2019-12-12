@@ -57,6 +57,7 @@ module Yarb
       return option(:usage, default: 'There is no help defined') if flag?(:help)
       return source if flag?(:source)
       return example if flag?(:example)
+      return data if flag?(:noop)
 
       log(:debug, "execute #{@data.to_yaml}")
 
