@@ -40,8 +40,7 @@ module Yarb
       load_lib
       config = get_config(DEFAULT_CONFIG)
       @data = add_command_data(@raw_arguments, config)
-      @logger.level = option('log-level').to_sym
-      log('debug', "LogLevel changed to #{@logger.level}")
+      @logger.level = option('log-level')
       @data = get_file_data(@data)
       self
     end
@@ -137,12 +136,16 @@ module Yarb
 
   class Logger
     LOG_LEVEL = { debug: 5, info: 4, warning: 3, error: 2, fatal: 1, off: 0 }.freeze
-    attr_accessor :level
 
     def initialize(level: :warning)
       raise ArgumentError, "#{level} is not a valid log level" unless LOG_LEVEL.keys.include?(level.to_sym)
 
       @level = level.to_sym
+    end
+
+    def level=(level)
+      @level = level.to_sym
+      log('debug', "LogLevel changed to #{@level}")
     end
 
     def log(level, message)
