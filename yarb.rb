@@ -113,7 +113,7 @@ module Yarb
     end
 
     def get_file_data(data)
-      return data unless @data['file']
+      return data unless @data['file'] && File.file?(@data['file'])
 
       yaml = ERB.new(source).result(binding)
       argument_data = YAML.safe_load(yaml)
