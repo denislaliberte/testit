@@ -42,7 +42,7 @@ module Yarb
       @data = add_command_data(@raw_arguments, config)
       @logger.level = option('log-level').to_sym
       log('debug', "LogLevel changed to #{@logger.level}")
-      @data = get_argument_data(@data)
+      @data = get_file_data(@data)
       self
     end
 
@@ -85,7 +85,7 @@ module Yarb
     def add_command_data(raw_arguments, default)
       arguments = filter_flag(raw_arguments)
       default
-        .recursive_merge('argument' => arguments[0])
+        .recursive_merge('file' => arguments[0])
         .recursive_merge(get_options(raw_arguments))
         .recursive_merge(get_flags(raw_arguments))
     end
@@ -112,8 +112,8 @@ module Yarb
         .to_h
     end
 
-    def get_argument_data(data)
-      return data unless @data['argument']
+    def get_file_data(data)
+      return data unless @data['file']
 
       yaml = ERB.new(source).result(binding)
       argument_data = YAML.safe_load(yaml)
@@ -121,7 +121,7 @@ module Yarb
     end
 
     def source
-      File.read(@data['argument'])
+      File.read(@data['file'])
     end
 
     def example

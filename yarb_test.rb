@@ -82,7 +82,7 @@ module Yarb
       File.write('tmp/test.yml', source.to_yaml)
       File.write("#{home}/config.yml", { 'key' => 'config' }.to_yaml)
       expected_return = Yarb::DEFAULT_CONFIG.merge(
-        'argument' => 'tmp/test.yml', 'eval' => 'throw :wrench', 'noop' => true, 'key' => 'config'
+        'file' => 'tmp/test.yml', 'eval' => 'throw :wrench', 'noop' => true, 'key' => 'config'
       )
       assert_equal expected_return, Yarb.new(['tmp/test.yml', '--noop'], workspace: home).configure.execute
     end
