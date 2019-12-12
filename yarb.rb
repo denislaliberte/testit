@@ -8,7 +8,7 @@ require 'forwardable'
 module Yarb
   class Yarb
     extend Forwardable
-    attr_reader :data
+    attr_reader :data, :workspace
 
     def_delegators :@logger, :log
 
@@ -39,7 +39,7 @@ module Yarb
     def configure
       load_lib
       config = get_config(DEFAULT_CONFIG)
-      arguments = Hook.execute(:pre_configure, @raw_arguments)
+      arguments = Hook.execute(:pre_configure, arguments: @raw_arguments, yarb: self).fetch(:arguments)
       @data = add_command_data(arguments, config)
       @logger.level = option('log-level')
       @data = get_file_data(@data)
@@ -138,8 +138,8 @@ module Yarb
   class Hook
     @hooks = Hash.new([])
 
-    def self.execute(name, data)
-      @hooks[name].inject(data) do |result, hook|
+    def self.execute(name, **kwargs)
+      @hooks[name].inject(kwargs) do |result, hook|
         hook.call(result)
       end
     end

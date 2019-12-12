@@ -36,8 +36,9 @@ module Yarb
     end
 
     def test_pre_configure_hook_can_modify_arguments
-      Hook.register(:pre_configure) do |arguments|
-        arguments.map(&:upcase)
+      Hook.register(:pre_configure) do |data|
+        data[:arguments] = data[:arguments].map(&:upcase)
+        data
       end
       assert_equal 'QWER', Yarb.new(['--asdf', 'qwer']).configure.data['ASDF']
       Hook.clear(:pre_configure)
@@ -124,32 +125,36 @@ module Yarb
   class HookTest < Minitest::Test
     def test_register_a_hook
       Hook.register(:test) do |data|
-        data + 1
+        data[:count] += 1
+        data
       end
 
-      assert_equal 2, Hook.execute(:test, 1)
+      assert_equal 2, Hook.execute(:test, count: 1).fetch(:count)
       Hook.clear(:test)
     end
 
     def test_register_two_hook
       Hook.register(:test) do |data|
-        data + 1
+        data[:count] += 1
+        data
       end
       Hook.register(:test) do |data|
-        data * 2
+        data[:count] *= 2
+        data
       end
 
-      assert_equal 4, Hook.execute(:test, 1)
+      assert_equal 4, Hook.execute(:test, count: 1).fetch(:count)
       Hook.clear(:test)
     end
 
     def test_clear_a_hook
       Hook.register(:test) do |data|
-        data + 1
+        data[:count] += 1
+        data
       end
 
       Hook.clear(:test)
-      assert_equal 1, Hook.execute(:test, 1)
+      assert_equal 1, Hook.execute(:test, count: 1).fetch(:count)
     end
   end
 
