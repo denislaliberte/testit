@@ -39,7 +39,8 @@ module Yarb
     def configure
       load_lib
       config = get_config(DEFAULT_CONFIG)
-      @data = add_command_data(@raw_arguments, config)
+      arguments = Hook.execute(:pre_configure, @raw_arguments)
+      @data = add_command_data(arguments, config)
       @logger.level = option('log-level')
       @data = get_file_data(@data)
       self
@@ -131,6 +132,24 @@ module Yarb
       return log(:warning, 'eval key is missing') if data['eval'].nil? || data['eval'].empty?
 
       eval(data['eval'])
+    end
+  end
+
+  class Hook
+    @hooks = Hash.new([])
+
+    def self.execute(name, data)
+      @hooks[name].inject(data) do |result, hook|
+        hook.call(result)
+      end
+    end
+
+    def self.register(name, &hook)
+      @hooks[name] << hook
+    end
+
+    def self.clear(name)
+      @hooks[name].clear
     end
   end
 

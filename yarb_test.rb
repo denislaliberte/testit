@@ -35,6 +35,14 @@ module Yarb
       assert_equal 'asdfqwer', Yarb.new(['tmp/test.yml'], workspace: home).configure.execute
     end
 
+    def test_pre_configure_hook_can_modify_arguments
+      Hook.register(:pre_configure) do |arguments|
+        arguments.map(&:upcase)
+      end
+      assert_equal 'QWER', Yarb.new(['--asdf', 'qwer']).configure.data['ASDF']
+      Hook.clear(:pre_configure)
+    end
+
     def test_help_message
       help_message = %(
             Usage
@@ -110,6 +118,38 @@ module Yarb
 
     def home
       "#{Dir.pwd}/tmp"
+    end
+  end
+
+  class HookTest < Minitest::Test
+    def test_register_a_hook
+      Hook.register(:test) do |data|
+        data + 1
+      end
+
+      assert_equal 2, Hook.execute(:test, 1)
+      Hook.clear(:test)
+    end
+
+    def test_register_two_hook
+      Hook.register(:test) do |data|
+        data + 1
+      end
+      Hook.register(:test) do |data|
+        data * 2
+      end
+
+      assert_equal 4, Hook.execute(:test, 1)
+      Hook.clear(:test)
+    end
+
+    def test_clear_a_hook
+      Hook.register(:test) do |data|
+        data + 1
+      end
+
+      Hook.clear(:test)
+      assert_equal 1, Hook.execute(:test, 1)
     end
   end
 
