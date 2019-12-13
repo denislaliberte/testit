@@ -100,20 +100,23 @@ module Yarb
     def get_options(arguments)
       arguments
         .select { |key| key.match(/^--/) } # the key of the option is prefix with two dash : --key
-        .map { |key| [key.gsub('--', ''), arguments[arguments.index(key) + 1]] } # the value follow the key : --key value
+        .map { |key| [key.sub('--', ''), arguments[arguments.index(key) + 1]] } # the value follow the key : --key value
         .map { |key, value| flag_value(key, value) }
         .to_h
     end
 
     def flag_value(key, value)
       # if there is no value the key is a flag : --flag --other-option value
-      result =
-        if value.nil? || value.match(/^--/)
-          true
+      if value.nil? || value.match(/^--/)
+        if key.match(/^no-/)
+          # if the key start with --no- the flag is negative : --no-key
+          key = key.sub('no-', '')
+          value = false
         else
-          value
+          value = true
         end
-      [key, result]
+      end
+      [key, value]
     end
 
     def get_file_data(data)

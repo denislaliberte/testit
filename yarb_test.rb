@@ -82,9 +82,15 @@ module Yarb
       assert Yarb.new(arguments).configure.flag?(:key)
     end
 
-    def test_flag_negative
+    def test_flag_absent
       arguments = ['--other']
       refute Yarb.new(arguments).configure.flag?(:key)
+    end
+
+    def test_flag_negative
+      arguments = ['--no-key']
+      File.write("#{home}/config.yml", { 'key' => true }.to_yaml)
+      refute Yarb.new(arguments, workspace: home).configure.flag?(:key)
     end
 
     def test_noop_flag
