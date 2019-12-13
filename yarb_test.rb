@@ -4,6 +4,7 @@ require 'pry'
 require 'minitest/autorun'
 require_relative 'yarb'
 require 'fileutils'
+require 'timecop'
 
 module Yarb
   class YarbTest < Minitest::Test
@@ -183,6 +184,22 @@ module Yarb
 
     def test_wrong_level
       assert_raises(ArgumentError) { Logger.new(level: 'asdf') }
+    end
+
+    def test_time
+      Timecop.freeze(Time.local(2000)) do
+        assert_output(/2000.*warning: test/) { Logger.new(level: 'info').log(:warning, 'test') }
+      end
+    end
+
+    def test_data
+      out, _err = capture_io do
+        Logger.new(level: 'warning').log(:warning, 'test', my_data: 'test_data')
+      end
+      data = YAML.load(out) # rubocop:disable Security/YAMLLoad
+      assert_equal :warning, data[:level]
+      assert_equal 'test', data[:message]
+      assert_equal 'test_data', data[:data][:my_data]
     end
   end
 end

@@ -171,10 +171,15 @@ module Yarb
     end
 
     def log(level, message, **data)
-      data = Hook.execute(:log, level: level, message: message, data: data).fetch(:data)
-      return unless @console
+      time = Time.now
+      data = Hook.execute(:log, level: level, time: time, message: message, data: data)
+      return unless @console && LOG_LEVEL[level.to_sym] <= LOG_LEVEL[@level]
 
-      puts "#{level}: #{message} data: #{data.to_yaml}\n" if LOG_LEVEL[level.to_sym] <= LOG_LEVEL[@level]
+      if data[:data].empty?
+        puts "#{time} #{level}: #{message}"
+      else
+        puts data.to_yaml
+      end
     end
   end
 end
