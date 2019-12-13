@@ -90,7 +90,6 @@ module Yarb
       default
         .recursive_merge('file' => arguments[0])
         .recursive_merge(get_options(raw_arguments))
-        .recursive_merge(get_flags(raw_arguments))
     end
 
     def filter_flag(raw_arguments)
@@ -100,19 +99,21 @@ module Yarb
 
     def get_options(arguments)
       arguments
-        .select { |key| key.match(/^--/) } # an option key is prefix with two dash : --key
+        .select { |key| key.match(/^--/) } # the key of the option is prefix with two dash : --key
         .map { |key| [key.gsub('--', ''), arguments[arguments.index(key) + 1]] } # the value follow the key : --key value
-        .select { |_key, value| !value.nil? && !value.match(/^--/) } # key not follow by a value is not a option
+        .map { |key, value| flag_value(key, value) }
         .to_h
     end
 
-    def get_flags(arguments)
-      arguments
-        .select { |key| key.match(/^--/) } # an option key is prefix with two dash : --key
-        .map { |key| [key.gsub('--', ''), arguments[arguments.index(key) + 1]] } # the value follow the key : --key value
-        .select { |_key, value| value.nil? || value.match(/^--/) } # key not follow by a value is not a option
-        .map { |key, _value| [key, true] }
-        .to_h
+    def flag_value(key, value)
+      # if there is no value the key is a flag : --flag --other-option value
+      result =
+        if value.nil? || value.match(/^--/)
+          true
+        else
+          value
+        end
+      [key, result]
     end
 
     def get_file_data(data)
