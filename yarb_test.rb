@@ -7,16 +7,7 @@ require 'fileutils'
 require 'timecop'
 
 module Yarb
-  class YarbTest < Minitest::Test
-    def test_help
-      assert_silent { Yarb.new(['--help']).configure.execute }
-      assert_match(/--help.*Output this message/, Yarb.new(['--help']).configure.execute)
-    end
-
-    def test_example
-      assert_match(/manual/, Yarb.new(['--example']).configure.execute)
-    end
-
+  class YarbIntegrationTest < Minitest::Test
     def test_integration_evaluate_the_example_manual_file_output_the_readme
       File.write('tmp/manual.yml', Yarb.new(['--example']).configure.execute)
       arguments = ['tmp/manual.yml', '--version', '0.3.0', '--install']
@@ -36,6 +27,32 @@ module Yarb
       assert_equal 'asdfqwer', Yarb.new(['tmp/test.yml'], workspace: home).configure.execute
     end
 
+    def setup
+      Dir.mkdir(home)
+      Dir.mkdir("#{home}/lib")
+    end
+
+    def teardown
+      FileUtils.rm_rf(home)
+    end
+
+    private
+
+    def home
+      "#{Dir.pwd}/tmp"
+    end
+  end
+
+  class YarbTest < Minitest::Test
+    def test_help
+      assert_silent { Yarb.new(['--help']).configure.execute }
+      assert_match(/--help.*Output this message/, Yarb.new(['--help']).configure.execute)
+    end
+
+    def test_example
+      assert_match(/manual/, Yarb.new(['--example']).configure.execute)
+    end
+
     def test_pre_configure_hook_can_modify_arguments
       Hook.register(:pre_configure) do |data|
         data[:arguments] = data[:arguments].map(&:upcase)
@@ -44,6 +61,16 @@ module Yarb
       assert_equal 'QWER', Yarb.new(['--asdf', 'qwer']).configure.data['ASDF']
     ensure
       Hook.clear(:pre_configure)
+    end
+
+    def test_pre_configure_hook_can_modify_data
+      Hook.register(:post_configure) do |data|
+        data[:data] = { new: :data }
+        data
+      end
+      assert_equal :data, Yarb.new(['--asdf', 'qwer']).configure.data[:new]
+    ensure
+      Hook.clear(:post_configure)
     end
 
     def test_help_message

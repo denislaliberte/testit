@@ -45,6 +45,7 @@ module Yarb
       @logger.level = opts('log-level')
       @logger.console = opts('log-console')
       @data = get_file_data(@data)
+      @data = Hook.execute(:post_configure, data: @data, yarb: self).fetch(:data)
       self
     end
 
@@ -108,15 +109,12 @@ module Yarb
     def flag_value(key, value)
       # if there is no value the key is a flag : --flag --other-option value
       if value.nil? || value.match(/^--/)
-        if key.match(/^no-/)
-          # if the key start with --no- the flag is negative : --no-key
-          key = key.sub('no-', '')
-          value = false
-        else
-          value = true
-        end
+        # if the key start with --no- the flag is negative : --no-key
+        new_key = key.sub('no-', '')
+        [new_key, new_key == key]
+      else
+        [key, value]
       end
-      [key, value]
     end
 
     def get_file_data(data)
