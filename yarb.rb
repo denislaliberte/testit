@@ -21,6 +21,7 @@ module Yarb
 
     DEFAULT_CONFIG = {
       'log-level' => 'info',
+      'log-console' => true,
       'usage' => %(
         Synopsis
           ~/yarb.rb file.yml [options]
@@ -41,7 +42,8 @@ module Yarb
       config = get_config(DEFAULT_CONFIG)
       arguments = Hook.execute(:pre_configure, arguments: @raw_arguments, yarb: self).fetch(:arguments)
       @data = add_command_data(arguments, config)
-      @logger.level = option('log-level')
+      @logger.level = opts('log-level')
+      @logger.console = opts('log-console')
       @data = get_file_data(@data)
       self
     end
@@ -54,21 +56,22 @@ module Yarb
     end
 
     def execute
-      return option(:usage, default: 'There is no help defined') if flag?(:help)
+      return opts(:usage, default: 'There is no help defined') if flag?(:help)
       return source if flag?(:source)
       return example if flag?(:example)
       return data if flag?(:noop)
 
-      log(:debug, "execute #{@data.to_yaml}")
+      return log(:warning, 'eval key is missing') if @data['eval'].nil?
 
-      evaluate
+      log(:debug, 'execute', data: @data)
+
+      eval(@data['eval'])
     end
 
-    def option(key, default: nil)
+    def opts(key, default: nil)
       value = data[key.to_s]
       value.nil? ? default : value
     end
-    alias opts option
 
     def flag?(key)
       data[key.to_s]
@@ -127,21 +130,15 @@ module Yarb
     def example
       File.read(__FILE__).split(/^__END__$/, 2).last
     end
-
-    def evaluate
-      return log(:warning, 'eval key is missing') if data['eval'].nil? || data['eval'].empty?
-
-      eval(data['eval'])
-    end
   end
 
   class Hook
-    @hooks = Hash.new([])
+    @hooks = Hash.new { |value, key| value[key] = [] }
 
     def self.execute(name, **kwargs)
-      @hooks[name].inject(kwargs) do |result, hook|
-        hook.call(result)
-      end
+      return kwargs if @hooks[name].nil?
+
+      @hooks[name].inject(kwargs) { |result, hook| hook.call(result) }
     end
 
     def self.register(name, &hook)
@@ -155,11 +152,13 @@ module Yarb
 
   class Logger
     LOG_LEVEL = { debug: 5, info: 4, warning: 3, error: 2, fatal: 1, off: 0 }.freeze
+    attr_writer :console
 
-    def initialize(level: :warning)
+    def initialize(level: :warning, console: true)
       raise ArgumentError, "#{level} is not a valid log level" unless LOG_LEVEL.keys.include?(level.to_sym)
 
       @level = level.to_sym
+      @console = console
     end
 
     def level=(level)
@@ -167,8 +166,11 @@ module Yarb
       log('debug', "LogLevel changed to #{@level}")
     end
 
-    def log(level, message)
-      puts "#{level}: #{message}" if LOG_LEVEL[level.to_sym] <= LOG_LEVEL[@level]
+    def log(level, message, **data)
+      data = Hook.execute(:log, level: level, message: message, data: data).fetch(:data)
+      return unless @console
+
+      puts "#{level}: #{message} data: #{data.to_yaml}\n" if LOG_LEVEL[level.to_sym] <= LOG_LEVEL[@level]
     end
   end
 end
@@ -195,7 +197,7 @@ usage: |+
 
 manual: |+
   # [ YARB! ](https://github.com/denislaliberte/yarb)
-  <% if option(:version) %>version: <%= option(:version) %><% end %>
+  <% if opts(:version) %>version: <%= opts(:version) %><% end %>
 
   Use Yaml And RuBy to create simple command line tools quickly
 

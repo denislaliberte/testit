@@ -41,6 +41,7 @@ module Yarb
         data
       end
       assert_equal 'QWER', Yarb.new(['--asdf', 'qwer']).configure.data['ASDF']
+    ensure
       Hook.clear(:pre_configure)
     end
 
@@ -62,18 +63,18 @@ module Yarb
 
     def test_options
       arguments = ['--key', 'value']
-      assert_equal 'value', Yarb.new(arguments).configure.option(:key)
+      assert_equal 'value', Yarb.new(arguments).configure.opts(:key)
     end
 
     def test_options_default
       arguments = []
-      assert_equal 'default', Yarb.new(arguments).configure.option(:key, default: 'default')
+      assert_equal 'default', Yarb.new(arguments).configure.opts(:key, default: 'default')
     end
 
     def test_config_option
       File.write("#{home}/config.yml", { 'key' => 'config' }.to_yaml)
       arguments = []
-      assert_equal 'config', Yarb.new(arguments, workspace: home).configure.option(:key, default: 'default')
+      assert_equal 'config', Yarb.new(arguments, workspace: home).configure.opts(:key, default: 'default')
     end
 
     def test_flag
@@ -130,7 +131,6 @@ module Yarb
       end
 
       assert_equal 2, Hook.execute(:test, count: 1).fetch(:count)
-      Hook.clear(:test)
     end
 
     def test_register_two_hook
@@ -144,7 +144,6 @@ module Yarb
       end
 
       assert_equal 4, Hook.execute(:test, count: 1).fetch(:count)
-      Hook.clear(:test)
     end
 
     def test_clear_a_hook
@@ -156,12 +155,20 @@ module Yarb
       Hook.clear(:test)
       assert_equal 1, Hook.execute(:test, count: 1).fetch(:count)
     end
+
+    def teardown
+      Hook.clear(:test)
+    end
   end
 
   class LoggerTest < Minitest::Test
     def test_warning
       assert_output(/warning: test/) { Logger.new(level: 'warning').log(:warning, 'test') }
       assert_output(/warning: test/) { Logger.new(level: 'info').log(:warning, 'test') }
+    end
+
+    def test_no_console
+      assert_silent { Logger.new(level: 'warning', console: false).log(:warning, 'test') }
     end
 
     def test_silent
